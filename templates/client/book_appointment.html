@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+
+{% block title %}Book Appointment - New Chogma-SPA{% endblock %}
+{% block page_title %}Book Appointment{% endblock %}
+
+{% block content %}
+<div class="welcome-section mb-4">
+    <div class="row align-items-center">
+        <div class="col-12 col-md-8">
+            <h4><i class="fas fa-calendar-plus me-2"></i>Book New Appointment</h4>
+            <p class="mb-0">Select a service and choose your preferred date and time</p>
+        </div>
+        <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="btn-group w-100">
+                <a href="{% url 'client:appointments' %}" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Appointments
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12 col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Appointment Details</h6>
+            </div>
+            <div class="card-body">
+                <form method="post" id="appointmentForm">
+                    {% csrf_token %}
+                    
+                    <!-- Service Selection -->
+                    <div class="mb-3">
+                        <label for="id_service" class="form-label">Service *</label>
+                        {{ form.service }}
+                        {% if form.service.errors %}
+                            <div class="text-danger">{{ form.service.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <!-- Date Selection -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_appointment_date" class="form-label">Date *</label>
+                                {{ form.appointment_date }}
+                                {% if form.appointment_date.errors %}
+                                    <div class="text-danger">{{ form.appointment_date.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Time Selection -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_appointment_time" class="form-label">Time *</label>
+                                {{ form.appointment_time }}
+                                {% if form.appointment_time.errors %}
+                                    <div class="text-danger">{{ form.appointment_time.errors.0 }}</div>
+                                {% endif %}
+                                <div id="timeSlots" class="mt-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                     <!-- With this -->
+<div class="mb-3">
+    <label for="id_tickets_included" class="form-label">Tickets Included *</label>
+    {{ form.tickets_included }}
+    {% if form.tickets_included.errors %}
+        <div class="text-danger">{{ form.tickets_included.errors.0 }}</div>
+    {% endif %}
+    <div class="form-text">Tickets are automatically set based on the selected service</div>
+</div>
+
+                    <!-- Notes -->
+                    <div class="mb-3">
+                        <label for="id_notes" class="form-label">Notes</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                            <div class="text-danger">{{ form.notes.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Form-level errors -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <p class="mb-0">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-calendar-check me-2"></i>Book Appointment
+                        </button>
+                        <a href="{% url 'client:appointments' %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar with available slots -->
+    <div class="col-12 col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Available Time Slots</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Select a date to see available time slots</p>
+                <div id="availableSlotsList" class="d-flex flex-wrap gap-2">
+                    {% for slot in available_slots %}
+                    <span class="badge bg-success slot-badge" data-time="{{ slot }}">{{ slot }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Booking Information</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled small">
+                    <li><i class="fas fa-check-circle text-success me-2"></i>Appointments must be made at least 2 hours in advance</li>
+                    <li><i class="fas fa-check-circle text-success me-2"></i>You can cancel appointments up to 1 hour before the scheduled time</li>
+                    <li><i class="fas fa-check-circle text-success me-2"></i>Late arrivals may result in reduced service time</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.getElementById('id_appointment_date');
+        const timeInput = document.getElementById('id_appointment_time');
+        const serviceSelect = document.getElementById('id_service');
+        const ticketsInput = document.getElementById('tickets_included');
+        const availableSlotsList = document.getElementById('availableSlotsList');
+        
+        // Function to update available time slots based on selected date
+        function updateAvailableSlots(date) {
+            if (!date) return;
+            
+            fetch(`/client/appointments/get-slots/?date=${date}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        availableSlotsList.innerHTML = '';
+                        
+                        if (data.slots.length > 0) {
+                            data.slots.forEach(slot => {
+                                const badge = document.createElement('span');
+                                badge.className = 'badge bg-success slot-badge';
+                                badge.textContent = slot;
+                                badge.setAttribute('data-time', slot);
+                                badge.style.cursor = 'pointer';
+                                
+                                badge.addEventListener('click', function() {
+                                    timeInput.value = this.getAttribute('data-time');
+                                });
+                                
+                                availableSlotsList.appendChild(badge);
+                            });
+                        } else {
+                            availableSlotsList.innerHTML = '<p class="text-muted">No available slots for this date</p>';
+                        }
+                    } else {
+                        availableSlotsList.innerHTML = `<p class="text-danger">Error: ${data.error}</p>`;
+                    }
+                })
+                .catch(error => {
+                    availableSlotsList.innerHTML = `<p class="text-danger">Error loading slots</p>`;
+                    console.error('Error:', error);
+                });
+        }
+        
+        // Function to update tickets based on selected service
+function updateTickets(serviceId) {
+    const ticketsInput = document.getElementById('id_tickets_included');
+    
+    if (!serviceId) {
+        ticketsInput.value = '0';
+        return;
+    }
+    
+    // Fetch service details to get tickets information
+    fetch(`/client/services/get-details/${serviceId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                ticketsInput.value = data.tickets_included;
+            } else {
+                ticketsInput.value = '0';
+                console.error('Could not load ticket information');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching service details:', error);
+            ticketsInput.value = '0';
+        });
+}
+
+// Add event listener for service change
+document.getElementById('id_service').addEventListener('change', function() {
+    updateTickets(this.value);
+});
+
+// Initialize tickets if a service is already selected
+if (document.getElementById('id_service').value) {
+    updateTickets(document.getElementById('id_service').value);
+}
+        
+        // Update slots when date changes
+        dateInput.addEventListener('change', function() {
+            updateAvailableSlots(this.value);
+        });
+        
+        // Update tickets when service changes
+        serviceSelect.addEventListener('change', function() {
+            updateTickets(this.value);
+        });
+        
+        // Initialize slots for today's date
+        updateAvailableSlots(dateInput.value);
+        
+        // Initialize tickets if a service is already selected
+        if (serviceSelect.value) {
+            updateTickets(serviceSelect.value);
+        }
+        
+        // Add click handlers to existing slot badges
+        document.querySelectorAll('.slot-badge').forEach(badge => {
+            badge.addEventListener('click', function() {
+                timeInput.value = this.getAttribute('data-time');
+            });
+        });
+    });
+</script>
+
+<style>
+    .slot-badge {
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .slot-badge:hover {
+        transform: scale(1.05);
+        opacity: 0.9;
+    }
+</style>
+{% endblock %}

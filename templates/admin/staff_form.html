@@ -1,0 +1,410 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}{{ title }} - New Chogma-SPA{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="admin-section">
+    <div class="row align-items-center">
+        <div class="col-12 col-md-8">
+            <h4><i class="fas fa-user-cog me-2"></i>{{ title }}</h4>
+            <p class="mb-0">{% if staff %}Edit staff member details{% else %}Add a new staff member{% endif %}</p>
+        </div>
+        <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="btn-group w-100">
+                <a href="{% url 'admin_app:staff_management' %}" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Staff
+                </a>
+                <button type="submit" form="staffForm" class="btn btn-accent btn-sm" style="background-color: var(--accent); color: var(--primary-dark);">
+                    <i class="fas fa-save me-1"></i>Save Staff
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Breadcrumb Navigation -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'admin_app:dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'admin_app:staff_management' %}">Staff Management</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+    </ol>
+</nav>
+
+<!-- Display messages -->
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="row">
+    <div class="col-12 col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Staff Information</h6>
+            </div>
+            <div class="card-body">
+                <form method="post" id="staffForm" novalidate>
+                    {% csrf_token %}
+                    
+                    <h6 class="mb-3">Personal Information</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="first_name" class="form-label">First Name *</label>
+                                <input type="text" class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" 
+                                       id="first_name" name="first_name" 
+                                       value="{{ form.first_name.value|default:'' }}"
+                                       placeholder="Enter first name" required>
+                                {% if form.first_name.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.first_name.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="last_name" class="form-label">Last Name *</label>
+                                <input type="text" class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" 
+                                       id="last_name" name="last_name" 
+                                       value="{{ form.last_name.value|default:'' }}"
+                                       placeholder="Enter last name" required>
+                                {% if form.last_name.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.last_name.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email Address *</label>
+                                <input type="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
+                                       id="email" name="email" 
+                                       value="{{ form.email.value|default:'' }}"
+                                       placeholder="Enter email address" required>
+                                {% if form.email.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.email.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="phone_number" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control {% if form.phone_number.errors %}is-invalid{% endif %}" 
+                                       id="phone_number" name="phone_number" 
+                                       value="{{ form.phone_number.value|default:'' }}"
+                                       placeholder="+250XXXXXXXXX">
+                                {% if form.phone_number.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.phone_number.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    <h6 class="mb-3">Employment Information</h6>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="staff_id" class="form-label">Staff ID *</label>
+                                <input type="text" class="form-control {% if form.staff_id.errors %}is-invalid{% endif %}" 
+                                       id="staff_id" name="staff_id" 
+                                       value="{{ form.staff_id.value|default:'' }}"
+                                       placeholder="Enter staff ID" required>
+                                {% if form.staff_id.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.staff_id.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="role" class="form-label">Role *</label>
+                                <select class="form-select {% if form.role.errors %}is-invalid{% endif %}" 
+                                        id="role" name="role" required>
+                                    <option value="">Select role</option>
+                                    <option value="receptionist" {% if form.role.value == 'receptionist' %}selected{% endif %}>Receptionist</option>
+                                    <option value="trainer" {% if form.role.value == 'trainer' %}selected{% endif %}>Trainer</option>
+                                    <option value="therapist" {% if form.role.value == 'therapist' %}selected{% endif %}>Therapist</option>
+                                    <option value="cleaner" {% if form.role.value == 'cleaner' %}selected{% endif %}>Cleaner</option>
+                                    <option value="manager" {% if form.role.value == 'manager' %}selected{% endif %}>Manager</option>
+                                    <option value="other" {% if form.role.value == 'other' %}selected{% endif %}>Other</option>
+                                </select>
+                                {% if form.role.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.role.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="department" class="form-label">Department</label>
+                                <input type="text" class="form-control {% if form.department.errors %}is-invalid{% endif %}" 
+                                       id="department" name="department" 
+                                       value="{{ form.department.value|default:'' }}"
+                                       placeholder="Enter department">
+                                {% if form.department.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.department.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="hire_date" class="form-label">Hire Date *</label>
+                                <input type="date" class="form-control {% if form.hire_date.errors %}is-invalid{% endif %}" 
+                                       id="hire_date" name="hire_date" 
+                                       value="{{ form.hire_date.value|default:'' }}"
+                                       required>
+                                {% if form.hire_date.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.hire_date.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="salary" class="form-label">Salary (RWF) *</label>
+                                <input type="number" class="form-control {% if form.salary.errors %}is-invalid{% endif %}" 
+                                       id="salary" name="salary" 
+                                       value="{{ form.salary.value|default:'0' }}"
+                                       step="0.01" min="0" required>
+                                {% if form.salary.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.salary.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="hourly_rate" class="form-label">Hourly Rate ($)</label>
+                                <input type="number" class="form-control {% if form.hourly_rate.errors %}is-invalid{% endif %}" 
+                                       id="hourly_rate" name="hourly_rate" 
+                                       value="{{ form.hourly_rate.value|default:'0' }}"
+                                       step="0.01" min="0">
+                                {% if form.hourly_rate.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.hourly_rate.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Status *</label>
+                                <select class="form-select {% if form.status.errors %}is-invalid{% endif %}" 
+                                        id="status" name="status" required>
+                                    <option value="">Select status</option>
+                                    <option value="active" {% if form.status.value == 'active' %}selected{% endif %}>Active</option>
+                                    <option value="inactive" {% if form.status.value == 'inactive' %}selected{% endif %}>Inactive</option>
+                                    <option value="on_leave" {% if form.status.value == 'on_leave' %}selected{% endif %}>On Leave</option>
+                                    <option value="terminated" {% if form.status.value == 'terminated' %}selected{% endif %}>Terminated</option>
+                                </select>
+                                {% if form.status.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.status.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="shifts" class="form-label">Shifts/Work Schedule</label>
+                        <textarea class="form-control {% if form.shifts.errors %}is-invalid{% endif %}" 
+                                  id="shifts" name="shifts" 
+                                  rows="3" placeholder="Enter work schedule or shifts">{{ form.shifts.value|default:'' }}</textarea>
+                        {% if form.shifts.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.shifts.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <hr class="my-4">
+                    <h6 class="mb-3">Additional Information</h6>
+                    
+                    <div class="mb-3">
+                        <label for="qualifications" class="form-label">Qualifications</label>
+                        <textarea class="form-control {% if form.qualifications.errors %}is-invalid{% endif %}" 
+                                  id="qualifications" name="qualifications" 
+                                  rows="3" placeholder="Enter qualifications, certifications, or skills">{{ form.qualifications.value|default:'' }}</textarea>
+                        {% if form.qualifications.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.qualifications.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="emergency_contact" class="form-label">Emergency Contact</label>
+                                <input type="text" class="form-control {% if form.emergency_contact.errors %}is-invalid{% endif %}" 
+                                       id="emergency_contact" name="emergency_contact" 
+                                       value="{{ form.emergency_contact.value|default:'' }}"
+                                       placeholder="Emergency contact name">
+                                {% if form.emergency_contact.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.emergency_contact.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="emergency_phone" class="form-label">Emergency Phone</label>
+                                <input type="tel" class="form-control {% if form.emergency_phone.errors %}is-invalid{% endif %}" 
+                                       id="emergency_phone" name="emergency_phone" 
+                                       value="{{ form.emergency_phone.value|default:'' }}"
+                                       placeholder="Emergency phone number">
+                                {% if form.emergency_phone.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.emergency_phone.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control {% if form.notes.errors %}is-invalid{% endif %}" 
+                                  id="notes" name="notes" 
+                                  rows="3" placeholder="Any additional notes or comments">{{ form.notes.value|default:'' }}</textarea>
+                        {% if form.notes.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.notes.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Form-level errors -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <p class="mb-0">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar with instructions -->
+    <div class="col-12 col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Adding Staff Instructions</h6>
+            </div>
+            <div class="card-body">
+                <h6>Required Information:</h6>
+                <ul class="list-unstyled small">
+                    <li>• First and last name</li>
+                    <li>• Email address (will be used as username)</li>
+                    <li>• Staff ID (must be unique)</li>
+                    <li>• Role and department</li>
+                    <li>• Hire date and salary</li>
+                </ul>
+                
+                <h6>Role Descriptions:</h6>
+                <ul class="list-unstyled small">
+                    <li><strong>Receptionist:</strong> Front desk, client check-in, appointments</li>
+                    <li><strong>Trainer:</strong> Gym training, fitness classes</li>
+                    <li><strong>Therapist:</strong> Massage and spa services</li>
+                    <li><strong>Cleaner:</strong> Facility maintenance</li>
+                    <li><strong>Manager:</strong> Staff supervision, reports</li>
+                </ul>
+                
+                <div class="alert alert-warning small">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Note:</strong> A temporary password will be automatically generated and the staff member will need to reset it on first login.
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="fas fa-user-plus me-2"></i>Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'admin_app:staff_management' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-users me-1"></i>View All Staff
+                    </a>
+                    <a href="{% url 'admin_app:staff_attendance' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-calendar-check me-1"></i>Manage Attendance
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="d-flex gap-2 mt-4">
+    <a href="{% url 'admin_app:staff_management' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Cancel
+    </a>
+    <button type="submit" form="staffForm" class="btn btn-primary">
+        <i class="fas fa-save me-2"></i>Save Staff Member
+    </button>
+    {% if staff %}
+    <button type="button" class="btn btn-danger">
+        <i class="fas fa-trash me-2"></i>Delete
+    </button>
+    {% endif %}
+</div>
+
+<style>
+    .form-check-input {
+        width: 3em;
+        height: 1.5em;
+    }
+    
+    .form-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    
+    hr {
+        border-color: #dee2e6;
+    }
+    
+    h6 {
+        font-weight: 600;
+        color: var(--primary-dark);
+    }
+</style>
+{% endblock %}

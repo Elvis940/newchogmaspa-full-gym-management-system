@@ -1,0 +1,311 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Service Management - New Chogma-SPA{% endblock %}
+{% block page_title %}Service Management{% endblock %}
+
+{% block content %}
+<div class="admin-section">
+    <div class="row align-items-center">
+        <div class="col-12 col-md-8">
+            <h4><i class="fas fa-cog me-2"></i>Service Packages Management</h4>
+            <p class="mb-0">Manage all service packages and pricing</p>
+        </div>
+        <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="btn-group w-100">
+                <button class="btn btn-outline-light btn-sm" onclick="location.reload()">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                </button>
+                <a href="{% url 'admin_app:add_service' %}" class="btn btn-accent btn-sm" style="background-color: var(--accent); color: var(--primary-dark);">
+                    <i class="fas fa-plus me-1"></i>Add Service
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card stat-card">
+            <div class="stat-number">{{ total_services }}</div>
+            <div class="stat-label">Total Packages</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card">
+            <div class="stat-number">{{ active_services }}</div>
+            <div class="stat-label">Active Packages</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card">
+            <div class="stat-number">{{ service_types.gym.count }}</div>
+            <div class="stat-label">Gym Packages</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card stat-card">
+            <div class="stat-number">{{ service_types.sauna.count }}</div>
+            <div class="stat-label">Sauna Packages</div>
+        </div>
+    </div>
+</div>
+
+<!-- Service Packages by Type -->
+{% for service_type, packages in service_types.items %}
+<div class="card mb-4">
+    <div class="card-header {% if service_type == 'gym' %}bg-primary{% elif service_type == 'sauna' %}bg-warning text-dark{% else %}bg-info{% endif %} text-white">
+        <h6 class="mb-0">
+            <i class="fas 
+                {% if service_type == 'gym' %}fa-dumbbell{% endif %}
+                {% if service_type == 'sauna' %}fa-hot-tub{% endif %}
+                {% if service_type == 'massage' %}fa-spa{% endif %}
+                me-2"></i>
+            {{ packages.first.get_service_type_display|default:service_type|title }} Packages ({{ packages.count }})
+        </h6>
+    </div>
+    <div class="card-body p-0">
+        {% if packages %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Package Name</th>
+                        <th>Description</th>
+                        <th>Price</th>
+                        <th>Tickets</th>  <!-- Changed from Sessions to Tickets -->
+                        <th>Validity</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for package in packages %}
+                    <tr>
+                        <td>
+                            <strong>{{ package.name }}</strong>
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ package.description|truncatewords:10 }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-success">{{ package.price }} RWF</span>
+                        </td>
+                        <td>
+                            {% if package.is_unlimited %}
+                            <span class="badge bg-info">Unlimited</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ package.tickets_included }} tickets</span>  <!-- Changed from sessions to tickets -->
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small>{{ package.validity_days }} days</small>
+                        </td>
+                        <td>
+                            {% if package.is_active %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="action-buttons d-flex gap-1">
+                                <a href="{% url 'admin_app:edit_service' package.id %}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button class="btn btn-sm {% if package.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %} toggle-service-status" 
+                                        title="{% if package.is_active %}Deactivate{% else %}Activate{% endif %}" 
+                                        data-service-id="{{ package.id }}">
+                                    <i class="fas {% if package.is_active %}fa-toggle-off{% else %}fa-toggle-on{% endif %}"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-service" 
+                                        title="Delete" 
+                                        data-service-id="{{ package.id }}"
+                                        data-service-name="{{ package.name }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-cog fa-2x text-muted mb-3"></i>
+            <p class="text-muted">No {{ service_type }} packages found</p>
+            <a href="{% url 'admin_app:add_service' %}?service_type={{ service_type }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-plus me-1"></i>Add {{ service_type|title }} Package
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteServiceModal" tabindex="-1" aria-labelledby="deleteServiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteServiceModalLabel">Confirm Deletion</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the service package <strong id="deleteServiceName"></strong>?</p>
+                <p class="text-danger"><strong>Warning:</strong> This action cannot be undone. This package will be permanently removed.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmServiceDelete">Delete Package</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Toggle Modal -->
+<div class="modal fade" id="serviceStatusModal" tabindex="-1" aria-labelledby="serviceStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="serviceStatusModalLabel">Confirm Status Change</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="serviceStatusModalMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="confirmServiceStatusChange">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Service status toggle functionality
+    const serviceStatusModal = new bootstrap.Modal(document.getElementById('serviceStatusModal'));
+    let currentServiceStatusId = null;
+    let currentServiceIsActive = null;
+
+    document.querySelectorAll('.toggle-service-status').forEach(button => {
+        button.addEventListener('click', function() {
+            currentServiceStatusId = this.getAttribute('data-service-id');
+            const serviceName = this.closest('tr').querySelector('strong').textContent;
+            currentServiceIsActive = this.classList.contains('btn-outline-warning');
+            
+            const action = currentServiceIsActive ? 'deactivate' : 'activate';
+            document.getElementById('serviceStatusModalMessage').textContent = 
+                `Are you sure you want to ${action} the service package "${serviceName}"?`;
+            
+            serviceStatusModal.show();
+        });
+    });
+
+    document.getElementById('confirmServiceStatusChange').addEventListener('click', function() {
+        if (currentServiceStatusId) {
+            fetch(`/admin-dashboard/services/toggle-status/${currentServiceStatusId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', data.message);
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert('danger', 'Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                showAlert('danger', 'Error: ' + error);
+            })
+            .finally(() => {
+                serviceStatusModal.hide();
+                currentServiceStatusId = null;
+                currentServiceIsActive = null;
+            });
+        }
+    });
+
+    // Service delete functionality
+    const deleteServiceModal = new bootstrap.Modal(document.getElementById('deleteServiceModal'));
+    let currentDeleteServiceId = null;
+    let currentDeleteServiceName = null;
+
+    document.querySelectorAll('.delete-service').forEach(button => {
+        button.addEventListener('click', function() {
+            currentDeleteServiceId = this.getAttribute('data-service-id');
+            currentDeleteServiceName = this.getAttribute('data-service-name');
+            
+            document.getElementById('deleteServiceName').textContent = currentDeleteServiceName;
+            deleteServiceModal.show();
+        });
+    });
+
+    document.getElementById('confirmServiceDelete').addEventListener('click', function() {
+        if (currentDeleteServiceId) {
+            fetch(`/admin-dashboard/services/delete/${currentDeleteServiceId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', data.message);
+                    document.querySelector(`button[data-service-id="${currentDeleteServiceId}"]`).closest('tr').remove();
+                } else {
+                    showAlert('danger', 'Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                showAlert('danger', 'Error: ' + error);
+            })
+            .finally(() => {
+                deleteServiceModal.hide();
+                currentDeleteServiceId = null;
+                currentDeleteServiceName = null;
+            });
+        }
+    });
+
+    // Utility functions (reuse from previous implementation)
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showAlert(type, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.querySelector('.admin-section').after(alertDiv);
+        
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,814 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Attendance Tracker - New Chogma-SPA{% endblock %}
+{% block page_title %}Attendance Tracker{% endblock %}
+
+{% block content %}
+<div class="admin-section mb-4">
+    <div class="row align-items-center">
+        <div class="col-12 col-md-8">
+            <h4><i class="fas fa-qrcode me-2"></i>Attendance Tracker</h4>
+            <p class="mb-0">Scan client QR codes to record attendance</p>
+        </div>
+        <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+            <button class="btn btn-outline-light btn-sm" onclick="location.reload()">
+                <i class="fas fa-sync-alt me-1"></i>Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Left Column - Scanner and Manual Check-in -->
+    <div class="col-12 col-lg-6">
+        <!-- QR Code Scanner -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fas fa-camera me-2"></i>QR Code Scanner</h6>
+                <span class="badge bg-light text-primary" id="camera-status-badge">Ready</span>
+            </div>
+            <div class="card-body text-center">
+                <div id="scanner-container" class="mb-3 position-relative" style="min-height: 300px;">
+                    <video id="qr-video" class="w-100 h-100" style="border: 2px solid #dee2e6; border-radius: 8px; display: none; object-fit: cover;"></video>
+                    <canvas id="qr-canvas" style="display: none;"></canvas>
+                    <div id="scanner-overlay" class="position-absolute top-50 start-50 translate-middle" 
+                         style="width: 250px; height: 250px; border: 3px solid #0d6efd; border-radius: 12px; pointer-events: none; display: none;"></div>
+                    <div id="scanner-placeholder" class="text-center py-5 d-flex flex-column justify-content-center align-items-center h-100">
+                        <i class="fas fa-camera fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Camera will activate when you start scanning</p>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-center gap-2 mb-3">
+                    <button id="start-scanner" class="btn btn-success btn-sm">
+                        <i class="fas fa-play me-1"></i>Start Scanner
+                    </button>
+                    <button id="stop-scanner" class="btn btn-danger btn-sm" style="display: none;">
+                        <i class="fas fa-stop me-1"></i>Stop Scanner
+                    </button>
+                </div>
+                
+                <div class="mt-3">
+                    <small class="text-muted" id="camera-status">Ready to start scanning</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Manual Check-in Fallback -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0"><i class="fas fa-keyboard me-2"></i>Manual Check-in</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">Use if QR code scanning is not working</p>
+                <div class="mb-3">
+                    <label for="client-email" class="form-label small fw-bold">Client Email</label>
+                    <input type="email" class="form-control form-control-sm" id="client-email" placeholder="Enter client email">
+                </div>
+                <div class="mb-3">
+                    <label for="service-type" class="form-label small fw-bold">Service Type</label>
+                    <select class="form-select form-select-sm" id="service-type">
+                        <option value="gym">Gym Session</option>
+                        <option value="sauna">Sauna</option>
+                        <option value="massage">Massage</option>
+                    </select>
+                </div>
+                <button class="btn btn-warning w-100 btn-sm" onclick="manualCheckIn()">
+                    <i class="fas fa-user-check me-1"></i>Manual Check-in
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right Column - Results and Attendance -->
+    <div class="col-12 col-lg-6">
+        <!-- Scan Results -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i>Scan Results</h6>
+                <span class="badge bg-light text-success" id="result-status">Waiting</span>
+            </div>
+            <div class="card-body p-3">
+                <div id="scan-result" class="text-center py-4">
+                    <i class="fas fa-qrcode fa-2x text-muted mb-3"></i>
+                    <p class="text-muted mb-0">Waiting for QR code scan...</p>
+                </div>
+                
+                <!-- Detailed User Information -->
+                <div id="user-details" style="display: none;">
+                    <!-- Client Information Card -->
+                    <div class="card mb-3 border-0 shadow-sm">
+                        <div class="card-header bg-primary text-white py-2">
+                            <h6 class="mb-0"><i class="fas fa-user me-2"></i>Client Information</h6>
+                        </div>
+                        <div class="card-body p-3" id="user-info-content"></div>
+                    </div>
+                    
+                    <!-- Package Information Card -->
+                    <div class="card mb-3 border-0 shadow-sm">
+                        <div class="card-header bg-info text-white py-2">
+                            <h6 class="mb-0"><i class="fas fa-ticket-alt me-2"></i>Package Information</h6>
+                        </div>
+                        <div class="card-body p-3" id="package-info-content"></div>
+                    </div>
+                    
+                    <!-- Attendance Status Card -->
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-warning text-dark py-2">
+                            <h6 class="mb-0"><i class="fas fa-history me-2"></i>Attendance History</h6>
+                        </div>
+                        <div class="card-body p-3" id="attendance-info-content"></div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-center gap-2 mt-3">
+                        <button class="btn btn-outline-primary btn-sm" onclick="printClientInfo()">
+                            <i class="fas fa-print me-1"></i>Print Info
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="startScanner()">
+                            <i class="fas fa-redo me-1"></i>Scan Another
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Today's Attendance -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fas fa-list me-2"></i>Today's Attendance</h6>
+                <span class="badge bg-light text-secondary">{{ attendance_records|length }}</span>
+            </div>
+            <div class="card-body p-0">
+                {% if attendance_records %}
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-hover mb-0">
+                        <thead class="sticky-top" style="background-color: #f8f9fa;">
+                            <tr>
+                                <th class="py-2">Client</th>
+                                <th class="py-2">Package</th>
+                                <th class="py-2 text-center">Tickets</th>
+                                <th class="py-2">Service</th>
+                                <th class="py-2">Time</th>
+                                <th class="py-2 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in attendance_records %}
+                            <tr>
+                                <td class="py-2">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0">
+                                            <i class="fas fa-user-circle text-primary"></i>
+                                        </div>
+                                        <div class="flex-grow-1 ms-2">
+                                            <div class="fw-medium small">{{ record.user.get_full_name }}</div>
+                                            <div class="text-muted xsmall">{{ record.user.email }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-2 small">
+                                    {% if record.active_package %}
+                                        {{ record.active_package.service_package.name|truncatewords:3 }}
+                                    {% else %}
+                                        <span class="text-muted">None</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-2 text-center">
+                                    {% if record.active_package %}
+                                        <span class="badge bg-{% if record.active_package.tickets_remaining > 0 %}success{% else %}danger{% endif %}">
+                                            {{ record.active_package.tickets_remaining }}/{{ record.active_package.total_tickets }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-2">
+                                    <span class="badge bg-info">{{ record.session_type|title }}</span>
+                                </td>
+                                <td class="py-2 small">
+                                    {{ record.check_in_time|time:"H:i" }}<br>
+                                    <span class="text-muted xsmall">{{ record.check_in_time|date:"M d" }}</span>
+                                </td>
+                                <td class="py-2 text-center">
+                                    <span class="badge bg-success"><i class="fas fa-check me-1"></i>Completed</span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-2x text-muted mb-3"></i>
+                    <p class="text-muted mb-0">No attendance records today</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Load jsQR library -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+<script>
+// Global variables
+let videoStream = null;
+let scanInterval = null;
+let isScannerActive = false;
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners
+    document.getElementById('start-scanner').addEventListener('click', startScanner);
+    document.getElementById('stop-scanner').addEventListener('click', stopScanner);
+    
+    // Check if jsQR is loaded
+    if (typeof jsQR === 'undefined') {
+        updateCameraStatus('QR scanner library loading...', 'warning');
+        loadJsQrLibrary();
+    } else {
+        updateCameraStatus('Scanner ready - Click Start', 'success');
+    }
+});
+
+// Load jsQR library dynamically
+function loadJsQrLibrary() {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+    script.onload = function() {
+        console.log('jsQR library loaded successfully');
+        updateCameraStatus('Scanner ready - Click Start', 'success');
+    };
+    script.onerror = function() {
+        console.error('Failed to load jsQR library');
+        updateCameraStatus('QR scanner library failed to load', 'error');
+        document.getElementById('start-scanner').disabled = true;
+    };
+    document.head.appendChild(script);
+}
+
+// Start the scanner
+async function startScanner() {
+    if (isScannerActive) return;
+    
+    console.log("Starting scanner...");
+    updateCameraStatus('Starting camera...', 'warning');
+    
+    try {
+        // Request camera access
+        videoStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: 'environment', // Prefer back camera for better scanning
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+        });
+        
+        // Display video stream
+        const videoElement = document.getElementById('qr-video');
+        videoElement.srcObject = videoStream;
+        videoElement.style.display = 'block';
+        document.getElementById('scanner-placeholder').style.display = 'none';
+        document.getElementById('scanner-overlay').style.display = 'block';
+        
+        // Play video and start scanning
+        await videoElement.play();
+        
+        // Show stop button, hide start button
+        document.getElementById('start-scanner').style.display = 'none';
+        document.getElementById('stop-scanner').style.display = 'inline-block';
+        
+        isScannerActive = true;
+        updateCameraStatus('Camera active - Ready to scan', 'success');
+        
+        // Start scanning for QR codes
+        startQRScanning();
+        
+    } catch (error) {
+        console.error('Error accessing camera:', error);
+        updateCameraStatus('Camera access denied: ' + error.message, 'error');
+        stopScanner();
+    }
+}
+
+// Stop the scanner
+function stopScanner() {
+    if (scanInterval) {
+        clearInterval(scanInterval);
+        scanInterval = null;
+    }
+    
+    if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+    }
+    
+    // Hide video and overlay, show placeholder
+    document.getElementById('qr-video').style.display = 'none';
+    document.getElementById('scanner-overlay').style.display = 'none';
+    document.getElementById('scanner-placeholder').style.display = 'block';
+    
+    // Show start button, hide stop button
+    document.getElementById('start-scanner').style.display = 'inline-block';
+    document.getElementById('stop-scanner').style.display = 'none';
+    
+    isScannerActive = false;
+    updateCameraStatus('Scanner stopped', 'info');
+}
+
+// Update camera status display
+function updateCameraStatus(message, type = 'info') {
+    const statusElement = document.getElementById('camera-status');
+    const statusBadge = document.getElementById('camera-status-badge');
+    
+    statusElement.textContent = message;
+    statusBadge.textContent = message.split(' - ')[0];
+    
+    // Remove all color classes
+    statusElement.classList.remove('text-success', 'text-warning', 'text-danger', 'text-info');
+    statusBadge.classList.remove('bg-success', 'bg-warning', 'bg-danger', 'bg-info', 'text-white');
+    
+    // Add appropriate color class
+    switch (type) {
+        case 'success':
+            statusElement.classList.add('text-success');
+            statusBadge.classList.add('bg-success', 'text-white');
+            break;
+        case 'warning':
+            statusElement.classList.add('text-warning');
+            statusBadge.classList.add('bg-warning', 'text-dark');
+            break;
+        case 'error':
+            statusElement.classList.add('text-danger');
+            statusBadge.classList.add('bg-danger', 'text-white');
+            break;
+        default:
+            statusElement.classList.add('text-info');
+            statusBadge.classList.add('bg-info', 'text-white');
+    }
+}
+
+// Start scanning for QR codes using jsQR
+function startQRScanning() {
+    const video = document.getElementById('qr-video');
+    const canvas = document.getElementById('qr-canvas');
+    const context = canvas.getContext('2d');
+    
+    scanInterval = setInterval(() => {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            // Set canvas dimensions to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            // Draw video frame to canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Get image data from canvas
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // Try to detect QR code using jsQR
+            try {
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "dontInvert",
+                });
+                
+                if (code) {
+                    console.log('QR Code detected:', code.data);
+                    processQRCode(code.data);
+                }
+            } catch (error) {
+                // Silent error - normal when no QR code is detected
+            }
+        }
+    }, 100); // Scan every 100ms for better responsiveness
+}
+
+// Manual check-in function
+function manualCheckIn() {
+    const clientEmail = document.getElementById('client-email').value.trim();
+    const serviceType = document.getElementById('service-type').value;
+    
+    if (!clientEmail) {
+        showAlert('Please enter client email', 'warning');
+        return;
+    }
+    
+    // Show loading state
+    document.getElementById('scan-result').innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin fa-2x text-primary mb-2"></i>
+            <p>Processing manual check-in...</p>
+        </div>
+    `;
+    
+    // Update result status
+    document.getElementById('result-status').textContent = 'Processing';
+    document.getElementById('result-status').className = 'badge bg-warning text-dark';
+    
+    // Create manual check-in data
+    const manualData = {
+        manual_checkin: true,
+        client_email: clientEmail,
+        service_type: serviceType,
+        timestamp: new Date().toISOString()
+    };
+    
+    processQRCode(JSON.stringify(manualData));
+}
+
+// Show alert message
+function showAlert(message, type = 'info') {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Insert at the top of the page
+    const container = document.querySelector('.admin-section');
+    container.parentNode.insertBefore(alertDiv, container.nextSibling);
+    
+    // Auto dismiss after 5 seconds
+    setTimeout(() => {
+        const bsAlert = new bootstrap.Alert(alertDiv);
+        bsAlert.close();
+    }, 5000);
+}
+
+// Process QR code data
+function processQRCode(qrData) {
+    console.log("Processing QR data:", qrData);
+    
+    // Show scanning feedback
+    document.getElementById('scan-result').innerHTML = `
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin fa-2x text-primary mb-2"></i>
+            <p>Processing QR code...</p>
+        </div>
+    `;
+    
+    // Update result status
+    document.getElementById('result-status').textContent = 'Processing';
+    document.getElementById('result-status').className = 'badge bg-warning text-dark';
+    
+    // Stop scanner temporarily
+    stopScanner();
+    
+    fetch("{% url 'admin_app:process_qr_scan' %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ qr_data: qrData })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Server error: ' + response.status);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log("Server response:", data);
+        if (data.success) {
+            // Show success message
+            document.getElementById('scan-result').innerHTML = `
+                <div class="alert alert-success mb-0">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>Success!</strong> ${data.message}
+                </div>
+            `;
+            
+            // Update result status
+            document.getElementById('result-status').textContent = 'Success';
+            document.getElementById('result-status').className = 'badge bg-success text-white';
+            
+            // Display detailed user information
+            displayUserDetails(data);
+            
+            // Reload attendance list after 2 seconds
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            // Show error message
+            document.getElementById('scan-result').innerHTML = `
+                <div class="alert alert-danger mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Error:</strong> ${data.error}
+                </div>
+            `;
+            
+            // Update result status
+            document.getElementById('result-status').textContent = 'Error';
+            document.getElementById('result-status').className = 'badge bg-danger text-white';
+            
+            // Hide detailed information
+            document.getElementById('user-details').style.display = 'none';
+            // Restart scanner
+            startScanner();
+        }
+    })
+    .catch(error => {
+        console.error('Error processing QR code:', error);
+        document.getElementById('scan-result').innerHTML = `
+            <div class="alert alert-danger mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Error:</strong> Failed to process QR code: ${error.message}
+            </div>
+        `;
+        
+        // Update result status
+        document.getElementById('result-status').textContent = 'Error';
+        document.getElementById('result-status').className = 'badge bg-danger text-white';
+        
+        document.getElementById('user-details').style.display = 'none';
+        // Restart scanner
+        startScanner();
+    });
+}
+
+// Enhanced displayUserDetails function
+function displayUserDetails(data) {
+    const userInfo = data.user_info;
+    const packageInfo = data.package_info;
+    const attendanceInfo = data.attendance_info;
+    
+    // Display user information with better formatting
+    document.getElementById('user-info-content').innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-user-circle fa-2x text-primary"></i>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h5 class="mb-0">${userInfo.name}</h5>
+                        <small class="text-muted">Client</small>
+                    </div>
+                </div>
+                
+                <div class="mb-2">
+                    <strong><i class="fas fa-envelope me-2 text-muted"></i>Email:</strong>
+                    <span class="float-end">${userInfo.email}</span>
+                </div>
+                
+                <div class="mb-2">
+                    <strong><i class="fas fa-phone me-2 text-muted"></i>Phone:</strong>
+                    <span class="float-end">${userInfo.phone || 'Not provided'}</span>
+                </div>
+                
+                <div class="mb-2">
+                    <strong><i class="fas fa-calendar-alt me-2 text-muted"></i>Member Since:</strong>
+                    <span class="float-end">${userInfo.member_since}</span>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="text-center p-3 bg-light rounded">
+                    <h4 class="text-success mb-0">${attendanceInfo.total_visits}</h4>
+                    <small class="text-muted">Total Visits</small>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <span class="badge bg-success fs-6">
+                        <i class="fas fa-check-circle me-1"></i>ACTIVE MEMBER
+                    </span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Display package information with better formatting
+    const ticketsUsed = packageInfo.total_tickets - packageInfo.remaining_tickets;
+    const utilizationPercent = Math.round((ticketsUsed / packageInfo.total_tickets) * 100);
+    
+    document.getElementById('package-info-content').innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="border-bottom pb-2">Package Details</h6>
+                <div class="mb-2">
+                    <strong>Package Name:</strong>
+                    <span class="float-end">${packageInfo.name}</span>
+                </div>
+                <div class="mb-2">
+                    <strong>Total Tickets:</strong>
+                    <span class="float-end">${packageInfo.total_tickets}</span>
+                </div>
+                <div class="mb-2">
+                    <strong>Tickets Used:</strong>
+                    <span class="float-end">${ticketsUsed}</span>
+                </div>
+                <div class="mb-2">
+                    <strong>Remaining Tickets:</strong>
+                    <span class="float-end"><strong class="text-success">${packageInfo.remaining_tickets}</strong></span>
+                </div>
+                <div class="mb-2">
+                    <strong>Expiry Date:</strong>
+                    <span class="float-end">${packageInfo.expiry_date}</span>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <h6 class="border-bottom pb-2">Utilization</h6>
+                <div class="progress mb-3" style="height: 20px;">
+                    <div class="progress-bar bg-success" role="progressbar" 
+                         style="width: ${utilizationPercent}%;" 
+                         aria-valuenow="${utilizationPercent}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
+                        ${utilizationPercent}% Used
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <div class="display-6 text-primary">${packageInfo.remaining_tickets}</div>
+                    <small class="text-muted">Tickets Available</small>
+                </div>
+                
+                ${packageInfo.remaining_tickets <= 2 ? `
+                <div class="alert alert-warning mt-2 p-2">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    <small>Low tickets remaining</small>
+                </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+    
+    // Display attendance information with better formatting
+    let recentVisitsHtml = '';
+    if (attendanceInfo.recent_visits && attendanceInfo.recent_visits.length > 0) {
+        recentVisitsHtml = `
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Service</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        attendanceInfo.recent_visits.forEach((visit, index) => {
+            const statusBadge = index === 0 ? 
+                '<span class="badge bg-success">Just Checked In</span>' :
+                '<span class="badge bg-secondary">Completed</span>';
+            
+            recentVisitsHtml += `
+                <tr>
+                    <td>${visit.date}</td>
+                    <td>${visit.service}</td>
+                    <td>${visit.time}</td>
+                    <td>${statusBadge}</td>
+                </tr>
+            `;
+        });
+        
+        recentVisitsHtml += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } else {
+        recentVisitsHtml = `
+            <div class="text-center py-3">
+                <i class="fas fa-history fa-2x text-muted mb-2"></i>
+                <p class="text-muted">No recent visits found</p>
+            </div>
+        `;
+    }
+    
+    document.getElementById('attendance-info-content').innerHTML = `
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-clock me-2 text-success"></i>
+                    <div>
+                        <strong>Check-in Time:</strong>
+                        <div class="text-success">${attendanceInfo.check_in_time}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-calendar-check me-2 text-info"></i>
+                    <div>
+                        <strong>Total Visits:</strong>
+                        <div class="text-info">${attendanceInfo.total_visits}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <h6 class="border-bottom pb-2 mb-3">Recent Activity</h6>
+        ${recentVisitsHtml}
+        
+        <div class="mt-3 p-2 bg-light rounded">
+            <small class="text-muted">
+                <i class="fas fa-info-circle me-1"></i>
+                Status: <span class="text-success">Active - Checked In Successfully</span>
+            </small>
+        </div>
+    `;
+    
+    // Show the detailed information section
+    document.getElementById('user-details').style.display = 'block';
+    
+    // Scroll to results for better visibility
+    document.getElementById('user-details').scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+    });
+}
+
+// Print function
+function printClientInfo() {
+    const printContent = document.getElementById('user-details').innerHTML;
+    const originalContent = document.body.innerHTML;
+    
+    document.body.innerHTML = `
+        <div class="container mt-4">
+            <h4 class="text-center mb-4">Client Attendance Record - New Chogma-SPA</h4>
+            ${printContent}
+            <div class="text-center mt-4">
+                <small class="text-muted">Printed on: ${new Date().toLocaleString()}</small>
+            </div>
+        </div>
+    `;
+    
+    window.print();
+    document.body.innerHTML = originalContent;
+    location.reload();
+}
+
+// Add Enter key support for manual check-in
+document.getElementById('client-email').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        manualCheckIn();
+    }
+});
+</script>
+
+<style>
+#qr-video {
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    max-width: 100%;
+    max-height: 300px;
+}
+.text-success { color: #198754 !important; }
+.text-warning { color: #ffc107 !important; }
+.text-danger { color: #dc3545 !important; }
+.text-info { color: #0dcaf0 !important; }
+.recent-visits { max-height: 200px; overflow-y: auto; }
+#scanner-overlay { box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.3); z-index: 10; }
+.progress { border-radius: 10px; }
+.progress-bar { border-radius: 10px; }
+.xsmall { font-size: 0.75rem; }
+
+/* Custom scrollbar for table */
+.table-responsive::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Sticky header for table */
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* Card shadow enhancement */
+.shadow-sm {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
+/* Badge styling */
+.badge {
+    font-size: 0.7em;
+    padding: 0.35em 0.65em;
+}
+</style>
+{% endblock %}

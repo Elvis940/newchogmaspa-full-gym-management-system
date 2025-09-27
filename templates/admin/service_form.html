@@ -1,0 +1,261 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}{{ title }} - New Chogma-SPA{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="admin-section">
+    <div class="row align-items-center">
+        <div class="col-12 col-md-8">
+            <h4><i class="fas fa-cog me-2"></i>{{ title }}</h4>
+            <p class="mb-0">{% if service %}Edit service package details{% else %}Create a new service package{% endif %}</p>
+        </div>
+        <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="btn-group w-100">
+                <a href="{% url 'admin_app:service_management' %}" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Services
+                </a>
+                <button type="submit" form="serviceForm" class="btn btn-accent btn-sm" style="background-color: var(--accent); color: var(--primary-dark);">
+                    <i class="fas fa-save me-1"></i>Save Package
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Breadcrumb Navigation -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'admin_app:dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'admin_app:service_management' %}">Services</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+    </ol>
+</nav>
+
+<!-- Display messages -->
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<!-- Add this after the messages section to see form errors -->
+{% if form.errors %}
+<div class="alert alert-danger">
+    <strong>Form Errors:</strong>
+    <ul>
+    {% for field, errors in form.errors.items %}
+        <li>{{ field }}: {{ errors.0 }}</li>
+    {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-12 col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Package Information</h6>
+            </div>
+            <div class="card-body">
+                <form method="post" id="serviceForm" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Package Name -->
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Package Name *</label>
+                        <input type="text" class="form-control {% if form.name.errors %}is-invalid{% endif %}" 
+                               id="name" name="name" 
+                               value="{{ form.name.value|default:'' }}"
+                               placeholder="Enter package name" required>
+                        {% if form.name.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.name.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Service Type -->
+                    <div class="mb-3">
+                        <label for="service_type" class="form-label">Service Type *</label>
+                        <select class="form-select {% if form.service_type.errors %}is-invalid{% endif %}" 
+                                id="service_type" name="service_type" required>
+                            <option value="">Select service type</option>
+                            <option value="gym" {% if form.service_type.value == 'gym' %}selected{% endif %}>Gym</option>
+                            <option value="sauna" {% if form.service_type.value == 'sauna' %}selected{% endif %}>Sauna</option>
+                            <option value="massage" {% if form.service_type.value == 'massage' %}selected{% endif %}>Massage</option>
+                        </select>
+                        {% if form.service_type.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.service_type.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Description -->
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control {% if form.description.errors %}is-invalid{% endif %}" 
+                                  id="description" name="description" 
+                                  rows="3" placeholder="Enter package description">{{ form.description.value|default:'' }}</textarea>
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.description.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <!-- Price -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="price" class="form-label">Price (RWF) *</label>
+                                <input type="number" class="form-control {% if form.price.errors %}is-invalid{% endif %}" 
+                                       id="price" name="price" 
+                                       value="{{ form.price.value|default:'0' }}"
+                                       step="0.01" min="0" required>
+                                {% if form.price.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.price.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Sessions Included -->
+                       <!-- Tickets Included -->
+<div class="col-md-6">
+    <div class="mb-3">
+        <label for="tickets_included" class="form-label">Tickets *</label>
+        <input type="number" class="form-control {% if form.tickets_included.errors %}is-invalid{% endif %}" 
+               id="tickets_included" name="tickets_included" 
+               value="{{ form.tickets_included.value|default:'0' }}"
+               min="0" placeholder="0 for unlimited" required>
+        {% if form.tickets_included.errors %}
+            <div class="invalid-feedback">
+                {{ form.tickets_included.errors.0 }}
+            </div>
+        {% endif %}
+        <div class="form-text">Enter 0 for unlimited tickets</div>
+    </div>
+</div>
+                    </div>
+                    
+                    <!-- Validity Days -->
+                    <div class="mb-3">
+                        <label for="validity_days" class="form-label">Validity (Days) *</label>
+                        <input type="number" class="form-control {% if form.validity_days.errors %}is-invalid{% endif %}" 
+                               id="validity_days" name="validity_days" 
+                               value="{{ form.validity_days.value|default:'30' }}"
+                               min="1" required>
+                        {% if form.validity_days.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.validity_days.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Number of days the package is valid</div>
+                    </div>
+                    
+                    <!-- Status and Auto-renew -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3 form-check form-switch">
+                                <input type="checkbox" class="form-check-input {% if form.is_active.errors %}is-invalid{% endif %}" 
+                                       id="is_active" name="is_active" {% if form.is_active.value %}checked{% endif %}>
+                                <label class="form-check-label" for="is_active">Active Package</label>
+                                {% if form.is_active.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.is_active.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3 form-check form-switch">
+                                <input type="checkbox" class="form-check-input {% if form.auto_renew.errors %}is-invalid{% endif %}" 
+                                       id="auto_renew" name="auto_renew" {% if form.auto_renew.value %}checked{% endif %}>
+                                <label class="form-check-label" for="auto_renew">Auto Renew</label>
+                                {% if form.auto_renew.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.auto_renew.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Automatically renew when expired</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form-level errors -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <p class="mb-0">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+    
+   <!-- Sidebar with package examples -->
+<div class="col-12 col-md-4">
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Package Examples</h6>
+        </div>
+        <div class="card-body">
+            <h6>Gym Packages:</h6>
+            <ul class="list-unstyled small">
+                <li>• Daily Pass - 10,000 RWF (1 day, 1 ticket)</li>
+                <li>• Weekly Membership - 50,000 RWF (7 days, 7 tickets)</li>
+                <li>• Monthly Membership - 150,000 RWF (30 days, 30 tickets)</li>
+            </ul>
+            
+            <h6>Sauna Packages:</h6>
+            <ul class="list-unstyled small">
+                <li>• Single Session - 20,000 RWF (1 ticket, 60 days validity)</li>
+                <li>• 10-Session Pack - 150,000 RWF (10 tickets, 60 days validity)</li>
+            </ul>
+            
+            <h6>Massage Packages:</h6>
+            <ul class="list-unstyled small">
+                <li>• 60min Massage - 60,000 RWF (1 ticket, 30 days validity)</li>
+                <li>• 5-Session Package - 250,000 RWF (5 tickets, 90 days validity)</li>
+            </ul>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Action Buttons -->
+<div class="d-flex gap-2 mt-4">
+    <a href="{% url 'admin_app:service_management' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Cancel
+    </a>
+    <button type="submit" form="serviceForm" class="btn btn-primary">
+        <i class="fas fa-save me-2"></i>Save Package
+    </button>
+    {% if service %}
+    <button type="button" class="btn btn-danger">
+        <i class="fas fa-trash me-2"></i>Delete
+    </button>
+    {% endif %}
+</div>
+
+<style>
+    .form-check-input {
+        width: 3em;
+        height: 1.5em;
+    }
+    
+    .form-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock %}

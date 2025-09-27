@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block title %}My QR Code - New Chogma-SPA{% endblock %}
+{% block page_title %}My QR Code{% endblock %}
+
+{% block content %}
+<div class="welcome-section mb-4">
+    <div class="row align-items-center">
+        <div class="col-12 col-md-8">
+            <h4><i class="fas fa-qrcode me-2"></i>My Personal QR Code</h4>
+            <p class="mb-0">Your unique QR code for gym access and attendance tracking</p>
+        </div>
+        <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="btn-group w-100">
+                <button class="btn btn-outline-light btn-sm" onclick="location.reload()">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                </button>
+                <button class="btn btn-accent btn-sm" onclick="downloadQRCode()">
+                    <i class="fas fa-download me-1"></i>Download QR
+                </button>
+                <a href="{% url 'client:generate_qr' %}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-envelope me-1"></i>Email QR
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12 col-md-6">
+        <!-- QR Code Display -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-qrcode me-2"></i>Your QR Code</h6>
+            </div>
+            <div class="card-body text-center">
+                <div id="qrcode" class="mb-4" style="min-height: 250px;"></div>
+                <p class="text-muted">Show this QR code at reception for check-in</p>
+                <div class="btn-group">
+                    <button class="btn btn-outline-primary" onclick="downloadQRCode()">
+                        <i class="fas fa-download me-1"></i>Download
+                    </button>
+                    <a href="{% url 'client:generate_qr' %}" class="btn btn-primary">
+                        <i class="fas fa-envelope me-1"></i>Email Me
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-md-6">
+        <!-- User Information -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-user me-2"></i>Your Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-4 fw-bold">Name:</div>
+                    <div class="col-8">{{ user.get_full_name }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-4 fw-bold">Email:</div>
+                    <div class="col-8">{{ user.email }}</div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-4 fw-bold">Phone:</div>
+                    <div class="col-8">{{ user.phone_number|default:"Not provided" }}</div>
+                </div>
+                <div class="row">
+                    <div class="col-4 fw-bold">Member Since:</div>
+                    <div class="col-8">{{ user.date_joined|date:"M d, Y" }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Active Packages -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="fas fa-ticket-alt me-2"></i>Active Packages</h6>
+            </div>
+            <div class="card-body">
+                {% if active_packages %}
+                    {% for package in active_packages %}
+                    <div class="package-item {% if not forloop.last %}mb-3 pb-3 border-bottom{% endif %}">
+                        <h6 class="mb-1">{{ package.service_package.name }}</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">Remaining:</small>
+                                <div class="fw-bold">{{ package.tickets_remaining }} tickets</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Expires:</small>
+                                <div class="fw-bold">{{ package.end_date|date:"M d, Y" }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted mb-0">No active packages</p>
+                    <a href="{% url 'client:services' %}" class="btn btn-sm btn-primary mt-2">
+                        <i class="fas fa-shopping-cart me-1"></i>Purchase Package
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QR Code Instructions -->
+<div class="card mt-4">
+    <div class="card-header bg-warning text-dark">
+        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>How to Use Your QR Code</h6>
+    </div>
+    <div class="card-body">
+        <ol>
+            <li><strong>Bring your QR code</strong> to the gym (on your phone or printed)</li>
+            <li><strong>Show it at reception</strong> when you arrive</li>
+            <li><strong>The staff will scan it</strong> to check you in automatically</li>
+            <li><strong>Your session will be deducted</strong> from your active package</li>
+            <li><strong>Enjoy your workout!</strong> Your attendance will be recorded</li>
+        </ol>
+        <div class="alert alert-info">
+            <i class="fas fa-lightbulb me-2"></i>
+            <strong>Tip:</strong> Save the QR code to your phone's photos for easy access, or print it and keep it in your wallet.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+<script>
+// Generate permanent QR code
+function generatePermanentQRCode() {
+    const qrData = '{{ qr_data|escapejs }}';
+    
+    const qrCodeElement = document.getElementById('qrcode');
+    qrCodeElement.innerHTML = '';
+    
+    try {
+        if (typeof QRCode !== 'undefined') {
+            new QRCode(qrCodeElement, {
+                text: qrData,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        } else {
+            showQRCodeFallback();
+        }
+    } catch (error) {
+        console.error('Error generating QR code:', error);
+        showQRCodeFallback();
+    }
+}
+
+// Show fallback if QR code generation fails
+function showQRCodeFallback() {
+    const qrCodeElement = document.getElementById('qrcode');
+    qrCodeElement.innerHTML = `
+        <div class="text-center p-3 border rounded">
+            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-2"></i>
+            <p class="small text-muted">Failed to generate QR code</p>
+            <button class="btn btn-sm btn-primary" onclick="retryQRCodeGeneration()">
+                <i class="fas fa-redo me-1"></i>Retry
+            </button>
+        </div>
+    `;
+}
+
+// Retry QR code generation
+function retryQRCodeGeneration() {
+    const qrCodeElement = document.getElementById('qrcode');
+    qrCodeElement.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Generating QR code...</p></div>';
+    
+    setTimeout(() => {
+        generatePermanentQRCode();
+    }, 500);
+}
+
+// Download QR code
+function downloadQRCode() {
+    const canvas = document.querySelector("#qrcode canvas");
+    if (canvas) {
+        const link = document.createElement('a');
+        link.download = 'chogma-spa-qrcode.png';
+        link.href = canvas.toDataURL("image/png");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } else {
+        alert('QR code not available for download. Please try generating it again.');
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    generatePermanentQRCode();
+    
+    // Check if QRCode library is loaded
+    setTimeout(() => {
+        if (typeof QRCode === 'undefined') {
+            console.warn('QRCode library not loaded, trying to load it now');
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js';
+            script.onload = function() {
+                console.log('QRCode library loaded successfully');
+                generatePermanentQRCode();
+            };
+            script.onerror = function() {
+                console.error('Failed to load QRCode library');
+                showQRCodeFallback();
+            };
+            document.head.appendChild(script);
+        }
+    }, 1000);
+});
+</script>
+{% endblock %}

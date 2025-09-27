@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .header { background-color: #ffc107; color: #333; padding: 20px; text-align: center; }
+        .content { padding: 20px; background-color: #f9f9f9; }
+        .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>New Chogma-SPA</h1>
+        <h2>Session Reminder</h2>
+    </div>
+    
+    <div class="content">
+        <p>Dear {{ user.get_full_name }},</p>
+        
+        <div class="alert alert-warning">
+            <strong>Reminder:</strong> You have only {{ sessions_remaining }} session(s) remaining in your {{ package.name }} package.
+        </div>
+        
+        <p>Your package details:</p>
+        <ul>
+            <li><strong>Package:</strong> {{ package.name }}</li>
+            <li><strong>Sessions Remaining:</strong> {{ sessions_remaining }}</li>
+            <li><strong>Valid Until:</strong> {{ package.end_date|date:"M d, Y" }}</li>
+        </ul>
+        
+        <p>To avoid interruption in your service, please consider renewing your package soon.</p>
+        
+        <p><a href="https://yourdomain.com/client/services/">Click here to browse available packages</a></p>
+        
+        <p>Best regards,<br>The Team at New Chogma-SPA</p>
+    </div>
+    
+    <div class="footer">
+        <p>This is an automated message. Please do not reply to this email.</p>
+        <p>© {% now "Y" %} New Chogma-SPA. All rights reserved.</p>
+    </div>
+</body>
+</html>

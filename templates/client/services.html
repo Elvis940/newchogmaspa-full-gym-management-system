@@ -1,0 +1,168 @@
+{% extends 'client/dashboard.html' %}
+
+{% block title %}Spa Services - New Chogma-SPA{% endblock %}
+
+{% block content %}
+<div class="welcome-section mb-4">
+    <div class="row align-items-center">
+        <div class="col-12 col-md-8">
+            <h4><i class="fas fa-spa me-2"></i>Our Spa Services</h4>
+            <p class="mb-0">Explore our premium services and packages</p>
+        </div>
+        <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="btn-group w-100">
+                <button class="btn btn-outline-light btn-sm" onclick="location.reload()">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                </button>
+                <a href="{% url 'client:book_appointment' %}" class="btn btn-accent btn-sm" style="background-color: var(--accent); color: var(--primary-dark);">
+                    <i class="fas fa-calendar me-1"></i>Book Now
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Service Packages by Type -->
+{% for service_type, packages in service_types.items %}
+<div class="card mb-4">
+    <div class="card-header {% if service_type == 'gym' %}bg-primary{% elif service_type == 'sauna' %}bg-warning text-dark{% else %}bg-info{% endif %} text-white">
+        <h6 class="mb-0">
+            <i class="fas 
+                {% if service_type == 'gym' %}fa-dumbbell{% endif %}
+                {% if service_type == 'sauna' %}fa-hot-tub{% endif %}
+                {% if service_type == 'massage' %}fa-spa{% endif %}
+                me-2"></i>
+            {{ packages.first.get_service_type_display|default:service_type|title }} Packages ({{ packages.count }})
+        </h6>
+    </div>
+    <div class="card-body p-0">
+        {% if packages %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 p-3">
+            {% for package in packages %}
+            <div class="col">
+                <div class="card h-100 service-card">
+                    <div class="card-header {% if service_type == 'gym' %}bg-primary{% elif service_type == 'sauna' %}bg-warning text-dark{% else %}bg-info{% endif %} text-white">
+                        <h6 class="mb-0">{{ package.name }}</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">{{ package.description }}</p>
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="h5 mb-0 text-accent">{{ package.price }} RWF</span>
+    {% if package.is_unlimited %}
+    <span class="badge bg-info">Unlimited Tickets</span>
+    {% else %}
+    <span class="badge bg-secondary">{{ package.tickets_included }} Tickets</span>
+    {% endif %}
+</div>
+                        <small class="text-muted">Valid for {{ package.validity_days }} days</small>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="d-grid gap-2">
+                             <a href="{% url 'client:book_appointment' %}" class="btn btn-accent btn-sm" style="background-color: var(--accent); color: var(--primary-dark);">
+                    <i class="fas fa-plus me-1"></i>Book Appointment
+                </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-cog fa-2x text-muted mb-3"></i>
+            <p class="text-muted">No {{ service_type }} packages available at the moment</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+
+<!-- Book Service Modal -->
+<div class="modal fade" id="bookServiceModal" tabindex="-1" aria-labelledby="bookServiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="bookServiceModalLabel">Book Service</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Select date and time for your appointment:</p>
+                <form id="bookingForm">
+                    <input type="hidden" id="serviceId" name="service_id">
+                    <div class="mb-3">
+                        <label for="bookingDate" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="bookingDate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="bookingTime" class="form-label">Time</label>
+                        <input type="time" class="form-control" id="bookingTime" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmBooking">Confirm Booking</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Book service functionality
+    const bookServiceModal = new bootstrap.Modal(document.getElementById('bookServiceModal'));
+    let currentServiceId = null;
+
+    document.querySelectorAll('[data-bs-target="#bookServiceModal"]').forEach(button => {
+        button.addEventListener('click', function() {
+            currentServiceId = this.getAttribute('data-service-id');
+            document.getElementById('serviceId').value = currentServiceId;
+        });
+    });
+
+    document.getElementById('confirmBooking').addEventListener('click', function() {
+        const date = document.getElementById('bookingDate').value;
+        const time = document.getElementById('bookingTime').value;
+        
+        if (!date || !time) {
+            alert('Please select both date and time');
+            return;
+        }
+        
+        // Here you would typically make an API call to book the service
+        // For now, we'll just show a success message
+        showAlert('success', 'Your appointment has been booked successfully!');
+        bookServiceModal.hide();
+    });
+
+    function showAlert(type, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.querySelector('.welcome-section').after(alertDiv);
+        
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
+    }
+</script>
+
+<style>
+    .service-card {
+        transition: transform 0.2s;
+    }
+    
+    .service-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .text-accent {
+        color: var(--accent);
+    }
+</style>
+{% endblock %}

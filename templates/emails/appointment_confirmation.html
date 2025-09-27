@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #c9a74d;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+        .content {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 0 0 10px 10px;
+            border: 1px solid #ddd;
+        }
+        .appointment-details {
+            background-color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            border-left: 4px solid #c9a74d;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>New Chogma-SPA</h1>
+        <h2>Appointment Confirmed</h2>
+    </div>
+    
+    <div class="content">
+        <p>Dear {{ client.get_full_name }},</p>
+        
+        <p>Your appointment has been confirmed. Here are the details:</p>
+        
+        <div class="appointment-details">
+            <h3>Appointment Details</h3>
+            <p><strong>Service:</strong> {{ appointment.service.name }}</p>
+            <p><strong>Date:</strong> {{ appointment.appointment_date|date:"F d, Y" }}</p>
+            <p><strong>Time:</strong> {{ appointment.appointment_time|time:"g:i A" }}</p>
+            <p><strong>Tickets Included:</strong> {{ appointment.tickets_included }} tickets</p>
+            {% if appointment.notes %}
+            <p><strong>Notes:</strong> {{ appointment.notes }}</p>
+            {% endif %}
+        </div>
+        
+        <p>Your package includes {{ appointment.tickets_included }} tickets that you can use for gym sessions.</p>
+        
+        <p>Please arrive 10-15 minutes before your scheduled appointment time.</p>
+        
+        <p>If you need to reschedule or cancel your appointment, please contact us at least 24 hours in advance.</p>
+        
+        <p>We look forward to seeing you!</p>
+        
+        <p>Best regards,<br>The Team at New Chogma-SPA</p>
+    </div>
+    
+    <div class="footer">
+        <p>This is an automated message. Please do not reply to this email.</p>
+        <p>© {% now "Y" %} New Chogma-SPA. All rights reserved.</p>
+    </div>
+</body>
+</html>

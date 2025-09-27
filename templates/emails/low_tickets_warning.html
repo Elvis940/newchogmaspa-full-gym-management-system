@@ -1,0 +1,117 @@
+<!-- templates/emails/low_tickets_warning.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Low Tickets Warning</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            line-height: 1.6; 
+            color: #333; 
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: #ffffff;
+        }
+        .header { 
+            background-color: #0d6efd; 
+            padding: 20px; 
+            text-align: center; 
+            color: white;
+        }
+        .content { 
+            padding: 30px; 
+        }
+        .footer { 
+            background-color: #f8f9fa; 
+            padding: 20px; 
+            text-align: center; 
+            font-size: 12px; 
+            color: #6c757d;
+        }
+        .alert { 
+            background-color: #fff3cd; 
+            border: 1px solid #ffeaa7; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin-bottom: 20px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #0d6efd;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .details {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>New Chogma-SPA</h1>
+            <p>Wellness & Fitness Center</p>
+        </div>
+        
+        <div class="content">
+            <div class="alert">
+                <h2 style="color: #856404; margin: 0;">⚠️ Low Tickets Warning!</h2>
+            </div>
+            
+            <p>Hello <strong>{{ user.get_full_name }}</strong>,</p>
+            
+            <p>This is a reminder that you have only <strong style="color: #dc3545;">{{ remaining_tickets }}</strong> ticket(s) remaining 
+            in your <strong>{{ package.service_package.name }}</strong> package.</p>
+            
+            <div class="details">
+                <h3 style="margin-top: 0;">Package Details:</h3>
+                <table style="width: 100%;">
+                    <tr>
+                        <td><strong>Package Name:</strong></td>
+                        <td>{{ package.service_package.name }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Remaining Tickets:</strong></td>
+                        <td><span style="color: #dc3545; font-weight: bold;">{{ remaining_tickets }}</span> / {{ package.total_tickets }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Expiry Date:</strong></td>
+                        <td>{{ package.end_date|date:"F d, Y" }}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <p>To avoid interruption of your services, we recommend booking a new appointment to renew your package.</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ request.scheme }}://{{ request.get_host }}{% url 'client:book_appointment' %}" class="button">
+                    📅 Book New Appointment
+                </a>
+            </div>
+            
+            <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+            
+            <p>Best regards,<br>
+            The New Chogma-SPA Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated message from New Chogma-SPA. Please do not reply to this email.</p>
+            <p>If you believe you received this email in error or need assistance, please contact our support team.</p>
+            <p>© {% now "Y" %} New Chogma-SPA. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

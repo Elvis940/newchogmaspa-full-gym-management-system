@@ -1,0 +1,234 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Client Details - {{ client.get_full_name }} - New Chogma-SPA{% endblock %}
+{% block page_title %}Client Details{% endblock %}
+
+{% block content %}
+<div class="admin-section">
+    <div class="row align-items-center">
+        <div class="col-12 col-md-8">
+            <h4><i class="fas fa-user me-2"></i>Client Details</h4>
+            <p class="mb-0">Complete information for {{ client.get_full_name }}</p>
+        </div>
+        <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="btn-group w-100">
+                <a href="{% url 'admin_app:user_management' %}" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Users
+                </a>
+                <a href="{% url 'admin_app:edit_client' client.id %}" class="btn btn-accent btn-sm" style="background-color: var(--accent); color: var(--primary-dark);">
+                    <i class="fas fa-edit me-1"></i>Edit
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Client Profile Header -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-md-2 text-center">
+                <div class="avatar-placeholder bg-info text-white rounded-circle mx-auto" style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 2rem;">
+                    {{ client.first_name|first|upper }}{{ client.last_name|first|upper }}
+                </div>
+            </div>
+            <div class="col-md-7">
+                <h4>{{ client.get_full_name }}</h4>
+                <p class="mb-1"><i class="fas fa-envelope me-2 text-muted"></i>{{ client.email }}</p>
+                <p class="mb-1"><i class="fas fa-phone me-2 text-muted"></i>{{ client.phone_number|default:"No phone number" }}</p>
+                <p class="mb-0"><i class="fas fa-calendar me-2 text-muted"></i>Member since: {{ client.date_joined|date:"M d, Y" }}</p>
+            </div>
+            <div class="col-md-3 text-md-end">
+                <span class="badge bg-{% if client.is_active %}success{% else %}danger{% endif %} mb-2">
+                    {% if client.is_active %}Active{% else %}Inactive{% endif %}
+                </span>
+                <br>
+                <span class="badge bg-info">Client ID: {{ client.id }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Left Column - Client Information -->
+    <div class="col-md-6">
+        <!-- Personal Information Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Personal Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <strong>First Name:</strong>
+                        <p class="text-muted">{{ client.first_name }}</p>
+                    </div>
+                    <div class="col-6">
+                        <strong>Last Name:</strong>
+                        <p class="text-muted">{{ client.last_name }}</p>
+                    </div>
+                    <div class="col-6">
+                        <strong>Username:</strong>
+                        <p class="text-muted">{{ client.username }}</p>
+                    </div>
+                    <div class="col-6">
+                        <strong>User ID:</strong>
+                        <p class="text-muted">{{ client.id }}</p>
+                    </div>
+                    <div class="col-12">
+                        <strong>Email:</strong>
+                        <p class="text-muted">{{ client.email }}</p>
+                    </div>
+                    <div class="col-12">
+                        <strong>Phone:</strong>
+                        <p class="text-muted">{{ client.phone_number|default:"Not provided" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Status Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-user-check me-2"></i>Account Status</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <strong>Status:</strong>
+                        <p>
+                            <span class="badge bg-{% if client.is_active %}success{% else %}danger{% endif %}">
+                                {% if client.is_active %}Active{% else %}Inactive{% endif %}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-6">
+                        <strong>Verified:</strong>
+                        <p>
+                            <span class="badge bg-{% if client.is_verified %}success{% else %}warning{% endif %}">
+                                {% if client.is_verified %}Yes{% else %}No{% endif %}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-6">
+                        <strong>Last Login:</strong>
+                        <p class="text-muted">{{ client.last_login|date:"M d, Y H:i"|default:"Never" }}</p>
+                    </div>
+                    <div class="col-6">
+                        <strong>Date Joined:</strong>
+                        <p class="text-muted">{{ client.date_joined|date:"M d, Y" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column - Statistics and Package Info -->
+    <div class="col-md-6">
+        <!-- Quick Stats -->
+        <div class="row mb-4">
+            <div class="col-6">
+                <div class="card stat-card">
+                    <div class="stat-number">{{ client_data.total_sessions_used }}</div>
+                    <div class="stat-label">Sessions Used</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card stat-card">
+                    <div class="stat-number">{{ client_data.remaining_sessions }}</div>
+                    <div class="stat-label">Remaining</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card stat-card">
+                    <div class="stat-number">{{ client_data.upcoming_appointments }}</div>
+                    <div class="stat-label">Upcoming</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Package Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="fas fa-gift me-2"></i>Current Package</h6>
+            </div>
+            <div class="card-body">
+                {% if client_data.current_package %}
+                <div class="text-center">
+                    <h5>{{ client_data.current_package.name }}</h5>
+                    <div class="progress mb-3" style="height: 20px;">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {% widthratio client_data.current_package.remaining_sessions client_data.current_package.sessions 100 %}%">
+                            {{ client_data.current_package.remaining_sessions }}/{{ client_data.current_package.sessions }}
+                        </div>
+                    </div>
+                    <p class="mb-1"><strong>Price:</strong> {{ client_data.current_package.price|floatformat:2 }} RWF</p>
+                    <p class="mb-1"><strong>Start Date:</strong> {{ client_data.current_package.start_date }}</p>
+                    <p class="mb-0"><strong>End Date:</strong> {{ client_data.current_package.end_date }}</p>
+                </div>
+                {% else %}
+                <p class="text-center text-muted">No active package</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="d-flex gap-2 mt-4">
+    <a href="{% url 'admin_app:user_management' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Back to Users
+    </a>
+    <a href="{% url 'admin_app:edit_client' client.id %}" class="btn btn-primary">
+        <i class="fas fa-edit me-2"></i>Edit Profile
+    </a>
+    {% if client.is_active %}
+    {% else %}
+    <form method="post" action="{% url 'admin_app:toggle_client_status' client.id %}" style="display: inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">
+            <i class="fas fa-user-check me-2"></i>Activate
+        </button>
+    </form>
+    {% endif %}
+</div>
+
+<style>
+    .avatar-placeholder {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: bold;
+    }
+    
+    .stat-card {
+        text-align: center;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .stat-number {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: var(--accent);
+    }
+    
+    .stat-label {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+    
+    .progress {
+        border-radius: 10px;
+    }
+    
+    .table th {
+        background-color: var(--primary-light);
+        color: var(--text-light);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,269 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}{{ title }} - New Chogma-SPA{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="admin-section">
+    <div class="row align-items-center">
+        <div class="col-12 col-md-8">
+            <h4><i class="fas fa-user me-2"></i>{{ title }}</h4>
+            <p class="mb-0">{% if client %}Edit client information{% else %}Add a new client to the system{% endif %}</p>
+        </div>
+        <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="btn-group w-100">
+                <a href="{% url 'admin_app:user_management' %}" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Clients
+                </a>
+                <button type="submit" form="clientForm" class="btn btn-accent btn-sm" style="background-color: var(--accent); color: var(--primary-dark);">
+                    <i class="fas fa-save me-1"></i>Save Client
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Breadcrumb Navigation -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'admin_app:dashboard' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'admin_app:user_management' %}">Clients</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ title }}</li>
+    </ol>
+</nav>
+
+<!-- Display messages -->
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-user-circle me-2"></i>Client Information</h6>
+            </div>
+            <div class="card-body">
+                <form method="post" id="clientForm" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <!-- First Name -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="firstName" class="form-label">First Name *</label>
+                                <input type="text" class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" 
+                                       id="firstName" name="first_name" 
+                                       value="{{ form.first_name.value|default:'' }}"
+                                       placeholder="Enter first name" required>
+                                {% if form.first_name.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.first_name.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Last Name -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="lastName" class="form-label">Last Name *</label>
+                                <input type="text" class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" 
+                                       id="lastName" name="last_name" 
+                                       value="{{ form.last_name.value|default:'' }}"
+                                       placeholder="Enter last name" required>
+                                {% if form.last_name.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.last_name.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Email -->
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address *</label>
+                        <input type="email" class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
+                               id="email" name="email" 
+                               value="{{ form.email.value|default:'' }}"
+                               placeholder="Enter email address" required>
+                        {% if form.email.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.email.errors.0 }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Phone Number -->
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Phone Number *</label>
+                        <input type="tel" class="form-control {% if form.phone_number.errors %}is-invalid{% endif %}" 
+                               id="phone" name="phone_number" 
+                               value="{{ form.phone_number.value|default:'' }}"
+                               placeholder="Enter phone number (+250xxxxxxxxx)" required>
+                        {% if form.phone_number.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.phone_number.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Format: +250 followed by 9 digits (e.g., +250788123456)</div>
+                    </div>
+                    
+                    <!-- Password Fields (only show for new clients or when editing) -->
+                    {% if not client %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password *</label>
+                                <input type="password" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" 
+                                       id="password" name="password1" 
+                                       placeholder="Enter password" required>
+                                {% if form.password1.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.password1.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="confirmPassword" class="form-label">Confirm Password *</label>
+                                <input type="password" class="form-control {% if form.password2.errors %}is-invalid{% endif %}" 
+                                       id="confirmPassword" name="password2" 
+                                       placeholder="Confirm password" required>
+                                {% if form.password2.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.password2.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="password" class="form-label">New Password</label>
+                                <input type="password" class="form-control {% if form.password1.errors %}is-invalid{% endif %}" 
+                                       id="password" name="password1" 
+                                       placeholder="Leave blank to keep current password">
+                                {% if form.password1.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.password1.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="confirmPassword" class="form-label">Confirm Password</label>
+                                <input type="password" class="form-control {% if form.password2.errors %}is-invalid{% endif %}" 
+                                       id="confirmPassword" name="password2" 
+                                       placeholder="Confirm new password">
+                                {% if form.password2.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.password2.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Status -->
+                    <div class="mb-3 form-check form-switch">
+                        <input type="checkbox" class="form-check-input {% if form.is_active.errors %}is-invalid{% endif %}" 
+                               id="is_active" name="is_active" {% if form.is_active.value %}checked{% endif %}>
+                        <label class="form-check-label" for="is_active">Active Account</label>
+                        {% if form.is_active.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.is_active.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">Deactivate to temporarily disable this client's account</div>
+                    </div>
+                    
+                    <!-- Form-level errors -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <p class="mb-0">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="d-flex gap-2 mt-4">
+    <a href="{% url 'admin_app:user_management' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left me-2"></i>Cancel
+    </a>
+    <button type="submit" form="clientForm" class="btn btn-primary">
+        <i class="fas fa-save me-2"></i>Save Client
+    </button>
+    {% if client %}
+    <a href="{% url 'admin_app:view_client' client.id %}" class="btn btn-info">
+        <i class="fas fa-eye me-2"></i>View Client
+    </a>
+    {% endif %}
+</div>
+
+<style>
+    .form-check-input {
+        width: 3em;
+        height: 1.5em;
+    }
+    
+    .form-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    
+    .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+</style>
+
+<script>
+    // Password strength indicator (for new clients)
+    document.getElementById('password')?.addEventListener('input', function() {
+        const password = this.value;
+        const strengthText = document.getElementById('passwordStrength');
+        
+        if (strengthText) {
+            let strength = 0;
+            let remarks = '';
+            
+            if (password.length >= 8) strength += 25;
+            if (/[A-Z]/.test(password)) strength += 25;
+            if (/[0-9]/.test(password)) strength += 25;
+            if (/[^A-Za-z0-9]/.test(password)) strength += 25;
+            
+            if (strength < 25) remarks = 'Very weak';
+            else if (strength < 50) remarks = 'Weak';
+            else if (strength < 75) remarks = 'Medium';
+            else if (strength < 100) remarks = 'Strong';
+            else remarks = 'Very strong';
+            
+            strengthText.textContent = remarks;
+            strengthText.className = 'form-text ' + 
+                (strength < 25 ? 'text-danger' : 
+                 strength < 50 ? 'text-warning' : 
+                 strength < 75 ? 'text-info' : 'text-success');
+        }
+    });
+</script>
+{% endblock %}

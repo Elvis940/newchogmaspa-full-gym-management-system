@@ -1,0 +1,460 @@
+{% extends 'base.html' %}
+
+{% block title %}Gym Sessions - New Chogma-SPA{% endblock %}
+{% block page_title %}Gym Sessions{% endblock %}
+
+{% block content %}
+<div class="welcome-section mb-4">
+    <div class="row align-items-center">
+        <div class="col-12 col-md-8">
+            <h4><i class="fas fa-dumbbell me-2"></i>My Gym Sessions</h4>
+            <p class="mb-0">Manage your sessions and track your attendance</p>
+        </div>
+        <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="btn-group">
+                <!-- Notification Bell Button -->
+                <button class="btn btn-warning position-relative me-2" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-bell"></i>
+                    {% if unread_notifications_count > 0 %}
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                        {{ unread_notifications_count }}
+                    </span>
+                    {% endif %}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    {% if notifications %}
+                        {% for notification in notifications %}
+                        <li>
+                            <a class="dropdown-item d-flex align-items-center" href="#">
+                                <div class="flex-shrink-0 me-2">
+                                    <i class="fas {% if notification.is_urgent %}fa-exclamation-triangle text-danger{% else %}fa-info-circle text-warning{% endif %}"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="small">{{ notification.message }}</div>
+                                    <div class="text-muted xsmall">{{ notification.created_at|timesince }} ago</div>
+                                </div>
+                                <button class="btn btn-sm btn-link mark-notification-read" data-notification-id="{{ notification.id }}">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </a>
+                        </li>
+                        {% endfor %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-center small" href="#" onclick="markAllNotificationsRead()">Mark all as read</a></li>
+                    {% else %}
+                        <li><a class="dropdown-item text-center" href="#">No notifications</a></li>
+                    {% endif %}
+                </ul>
+                
+                <button class="btn btn-outline-light" onclick="location.reload()">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Session Statistics in Flexboxes -->
+<div class="row mb-4">
+    <!-- Total Tickets Flexbox -->
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="d-flex align-items-center bg-light p-3 rounded h-100">
+            <div class="flex-shrink-0 text-primary me-3">
+                <i class="fas fa-ticket-alt fa-2x"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h5 class="mb-0" id="totalTickets">{{ total_tickets }}</h5>
+                <p class="mb-0">Total Tickets</p>
+                <small class="text-muted">Available tickets</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tickets Used Flexbox -->
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="d-flex align-items-center bg-light p-3 rounded h-100">
+            <div class="flex-shrink-0 text-success me-3">
+                <i class="fas fa-check-circle fa-2x"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h5 class="mb-0" id="ticketsUsed">{{ tickets_used }}</h5>
+                <p class="mb-0">Tickets Used</p>
+                <small class="text-muted"><span id="utilizationPercent">{{ utilization_percent|floatformat:0 }}</span>% utilization</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tickets Remaining Flexbox -->
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="d-flex align-items-center bg-light p-3 rounded h-100">
+            <div class="flex-shrink-0 text-info me-3">
+                <i class="fas fa-clock fa-2x"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h5 class="mb-0" id="ticketsRemaining">{{ tickets_remaining }}</h5>
+                <p class="mb-0">Tickets Remaining</p>
+                <small class="text-muted"><span id="remainingPercent">{{ remaining_percent|floatformat:0 }}</span>% remaining</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Active Packages Flexbox -->
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="d-flex align-items-center bg-light p-3 rounded h-100">
+            <div class="flex-shrink-0 text-warning me-3">
+                <i class="fas fa-box fa-2x"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h5 class="mb-0">{{ active_packages|length }}</h5>
+                <p class="mb-0">Active Packages</p>
+                <small class="text-muted">Currently active</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- My Booked Appointments -->
+<div class="card mb-4">
+    <div class="card-header bg-success text-white">
+        <h6 class="mb-0"><i class="fas fa-calendar-check me-2"></i>My Booked Appointments</h6>
+    </div>
+    <div class="card-body p-0">
+        {% if upcoming_appointments %}
+            {% for appointment in upcoming_appointments %}
+            <div class="appointment-item border-bottom p-4">
+                <div class="row align-items-center mb-3">
+                    <div class="col-md-8">
+                        <h5 class="mb-1">{{ appointment.service.name }}</h5>
+                        <p class="text-muted mb-0">
+                            <span class="badge bg-info">{{ appointment.service.get_service_type_display }}</span>
+                            {% if appointment.notes %}
+                            {{ appointment.notes|truncatewords:10 }}
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <div class="text-muted small mt-1">
+                            {{ appointment.appointment_date|date:"M d, Y" }} at {{ appointment.appointment_time|time:"g:i A" }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Appointment Details in Flexboxes -->
+                <div class="row mb-3">
+                    <!-- Service Type Flexbox -->
+                    <div class="col-md-3 mb-3 mb-md-0">
+                        <div class="d-flex align-items-center bg-light p-3 rounded h-100">
+                            <div class="flex-shrink-0 text-primary me-2">
+                                <i class="fas fa-spa fa-lg"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0">Service Type</h6>
+                                <p class="mb-0 small">{{ appointment.service.get_service_type_display }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Date & Time Flexbox -->
+                    <div class="col-md-3 mb-3 mb-md-0">
+                        <div class="d-flex align-items-center bg-light p-3 rounded h-100">
+                            <div class="flex-shrink-0 text-warning me-2">
+                                <i class="fas fa-calendar-alt fa-lg"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0">Date & Time</h6>
+                                <p class="mb-0 small">{{ appointment.appointment_date|date:"M d, Y" }}</p>
+                                <small class="text-muted">{{ appointment.appointment_time|time:"g:i A" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tickets Flexbox -->
+                    <div class="col-md-3 mb-3 mb-md-0">
+                        <div class="d-flex align-items-center bg-light p-3 rounded h-100">
+                            <div class="flex-shrink-0 text-info me-2">
+                                <i class="fas fa-ticket-alt fa-lg"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0">Tickets</h6>
+                                <p class="mb-0 small">{{ appointment.tickets_included }} tickets</p>
+                                <small class="text-muted">Included in appointment</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Status Flexbox -->
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center bg-light p-3 rounded h-100">
+                            <div class="flex-shrink-0 text-success me-2">
+                                <i class="fas fa-check-circle fa-lg"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0">Status</h6>
+                                <p class="mb-0 small">{{ appointment.get_status_display }}</p>
+                                <small class="text-muted">Confirmed by admin</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+            <h5>No Booked Appointments</h5>
+            <p class="text-muted">You haven't booked any appointments yet. Book your first appointment to get started.</p>
+            <a href="{% url 'client:book_appointment' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Book Appointment
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Attendance History -->
+<div class="card mb-4">
+    <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+        <h6 class="mb-0"><i class="fas fa-history me-2"></i>Recent Attendance</h6>
+        <div class="btn-group">
+            <a href="{% url 'client:download_history' 'pdf' %}" class="btn btn-sm btn-outline-light">
+                <i class="fas fa-file-pdf me-1"></i>PDF
+            </a>
+            <a href="{% url 'client:download_history' 'excel' %}" class="btn btn-sm btn-outline-light">
+                <i class="fas fa-file-excel me-1"></i>Excel
+            </a>
+            <a href="{% url 'client:download_history' 'csv' %}" class="btn btn-sm btn-outline-light">
+                <i class="fas fa-file-csv me-1"></i>CSV
+            </a>
+            <button class="btn btn-sm btn-outline-light" onclick="clearAttendanceHistory()">
+                <i class="fas fa-trash me-1"></i>Clear History
+            </button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if attendance_history %}
+        <div class="table-responsive">
+           <!-- In the gym_sessions.html template, update the attendance table -->
+<table class="table table-hover mb-0">
+    <thead class="table-light">
+        <tr>
+            <th>Date</th>
+            <th>Service Type</th>
+            <th>Package</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for record in attendance_history %}
+        <tr>
+            <td>{{ record.check_in_time|date:"M d, Y" }}</td>
+            <td>
+                <span class="badge bg-info">{{ record.session_type|title }}</span>
+            </td>
+            <td>{{ record.service_package.name }}</td>
+            <td>
+                {% if record.check_out_time %}
+                    <span class="badge bg-success">Completed</span>
+                {% else %}
+                    {# Assume sessions without check-out are completed if they're from today or earlier #}
+                    {% if record.check_in_time.date <= today %}
+                        <span class="badge bg-success">Completed</span>
+                    {% else %}
+                        <span class="badge bg-primary">Checked In</span>
+                    {% endif %}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+ </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-calendar-times fa-2x text-muted mb-3"></i>
+            <p class="text-muted">No attendance records found</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Low Ticket Notification Modal -->
+<div class="modal fade" id="lowTicketModal" tabindex="-1" aria-labelledby="lowTicketModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="lowTicketModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Low Tickets Alert
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                {% if low_ticket_notification %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Low Tickets Warning!</strong>
+                </div>
+                <p>{{ low_ticket_notification.message }}</p>
+                <p>You have only <strong>{{ low_ticket_notification.remaining_tickets }}</strong> 
+                ticket(s) remaining in your <strong>{{ low_ticket_notification.package_name }}</strong> package.</p>
+                <p>Please consider booking a new appointment to renew your package.</p>
+                {% else %}
+                <p>No low ticket notifications at this time.</p>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="{% url 'client:book_appointment' %}" class="btn btn-primary">
+                    <i class="fas fa-calendar-plus me-1"></i>Book New Appointment
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Show low ticket modal on page load if there are low tickets
+document.addEventListener('DOMContentLoaded', function() {
+    {% if low_ticket_notification %}
+    const lowTicketModal = new bootstrap.Modal(document.getElementById('lowTicketModal'));
+    lowTicketModal.show();
+    {% endif %}
+});
+
+// Mark notification as read
+function markNotificationRead(notificationId) {
+    fetch(`/client/notifications/mark-read/${notificationId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Remove the notification from the dropdown
+            const notificationElement = document.querySelector(`button[data-notification-id="${notificationId}"]`).closest('.dropdown-item').parentElement;
+            notificationElement.remove();
+            
+            // Update badge count
+            const badge = document.querySelector('.btn-warning .badge');
+            if (badge) {
+                const currentCount = parseInt(badge.textContent);
+                if (currentCount > 1) {
+                    badge.textContent = currentCount - 1;
+                } else {
+                    badge.remove();
+                }
+            }
+        }
+    });
+}
+
+// Mark all notifications as read
+function markAllNotificationsRead() {
+    fetch('/client/notifications/mark-all-read/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Clear all notifications from dropdown
+            document.querySelectorAll('.dropdown-item').forEach(item => {
+                if (!item.classList.contains('dropdown-divider') && !item.textContent.includes('Mark all as read')) {
+                    item.parentElement.remove();
+                }
+            });
+            
+            // Add "No notifications" message
+            const dropdownMenu = document.querySelector('.dropdown-menu');
+            const noNotifications = document.createElement('li');
+            noNotifications.innerHTML = '<a class="dropdown-item text-center" href="#">No notifications</a>';
+            dropdownMenu.insertBefore(noNotifications, dropdownMenu.firstChild);
+            
+            // Remove badge
+            const badge = document.querySelector('.btn-warning .badge');
+            if (badge) {
+                badge.remove();
+            }
+        }
+    });
+}
+
+// Clear attendance history
+function clearAttendanceHistory() {
+    if (confirm('Are you sure you want to clear all your attendance history? This action cannot be undone.')) {
+        fetch('/client/clear-attendance-history/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+                // Reload the page to reflect changes
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAlert('danger', 'Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            showAlert('danger', 'Error: ' + error);
+        });
+    }
+}
+
+// Utility function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Show alert message
+function showAlert(type, message) {
+    // Remove any existing alerts first
+    document.querySelectorAll('.alert-dismissible').forEach(alert => alert.remove());
+    
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.querySelector('.welcome-section').after(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// Add event listeners for notification buttons
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.mark-notification-read').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const notificationId = this.getAttribute('data-notification-id');
+            markNotificationRead(notificationId);
+        });
+    });
+});
+</script>
+{% endblock %}

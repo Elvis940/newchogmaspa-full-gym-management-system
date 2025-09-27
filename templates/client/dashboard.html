@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+
+{% block title %}Client Dashboard - New Chogma-SPA{% endblock %}
+{% block page_title %}My Dashboard{% endblock %}
+
+{% block content %}
+<!-- Welcome Section -->
+<div class="welcome-section mb-4">
+    <div class="row align-items-center">
+        <div class="col-12 col-md-8">
+            <h4>Welcome back, {{ user.get_full_name|default:user.username }}! 👋</h4>
+            <p class="mb-2">Here's your personalized dashboard with all your activities and statistics.</p>
+            <small class="text-muted"><i class="fas fa-calendar me-1"></i>Member since: {{ user.date_joined|date:"M d, Y" }}</small>
+        </div>
+        <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="btn-group">
+                <a href="{% url 'client:client_qr_code' %}" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-qrcode me-1"></i>My QR Code
+                </a>
+                <a href="{% url 'client:book_appointment' %}" class="btn btn-accent btn-sm" style="background-color: var(--accent); color: var(--primary-dark);">
+                    <i class="fas fa-plus me-1"></i>Book Now
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <!-- Remaining Sessions -->
+    <div class="col-6 col-lg-3 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center p-3">
+                <div class="stat-icon mb-2">
+                    <i class="fas fa-ticket-alt fa-2x text-primary"></i>
+                </div>
+                <div class="stat-number">{{ tickets_remaining }}</div>
+                <div class="stat-label">Remaining Tickets</div>
+                <small class="text-muted">Active packages</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Upcoming Appointments -->
+    <div class="col-6 col-lg-3 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center p-3">
+                <div class="stat-icon mb-2">
+                    <i class="fas fa-calendar-check fa-2x text-success"></i>
+                </div>
+                <div class="stat-number">{{ upcoming_appointments.count }}</div>
+                <div class="stat-label">Upcoming Appointments</div>
+                <small class="text-muted">Confirmed bookings</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Active Packages -->
+    <div class="col-6 col-lg-3 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center p-3">
+                <div class="stat-icon mb-2">
+                    <i class="fas fa-box-open fa-2x text-info"></i>
+                </div>
+                <div class="stat-number">{{ active_packages|length }}</div>
+                <div class="stat-label">Active Packages</div>
+                <small class="text-muted">Current subscriptions</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Utilization Rate -->
+    <div class="col-6 col-lg-3 mb-3">
+        <div class="card stat-card h-100">
+            <div class="card-body text-center p-3">
+                <div class="stat-icon mb-2">
+                    <i class="fas fa-chart-pie fa-2x text-warning"></i>
+                </div>
+                <div class="stat-number">{{ utilization_percent|floatformat:0 }}%</div>
+                <div class="stat-label">Utilization Rate</div>
+                <small class="text-muted">Tickets used</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Row -->
+<div class="row">
+    <!-- Recent Activities & Appointments -->
+    <div class="col-12 col-lg-8 mb-4">
+        <!-- Upcoming Appointments Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="fas fa-calendar me-2"></i>Upcoming Appointments</h6>
+                <span class="badge bg-light text-success">{{ upcoming_appointments.count }}</span>
+            </div>
+            <div class="card-body p-0">
+                {% if upcoming_appointments %}
+                <div class="list-group list-group-flush">
+                    {% for appointment in upcoming_appointments %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-spa text-primary me-2"></i>
+                                    <strong class="me-2">{{ appointment.service.name }}</strong>
+                                    <span class="badge bg-info">{{ appointment.service.get_service_type_display }}</span>
+                                </div>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>{{ appointment.appointment_date|date:"M d, Y" }}
+                                    </small>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>{{ appointment.appointment_time|time:"g:i A" }}
+                                    </small>
+                                    {% if appointment.notes %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-sticky-note me-1"></i>{{ appointment.notes|truncatewords:5 }}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-success">{{ appointment.get_status_display }}</span>
+                                <div class="mt-1">
+                                    <small class="text-muted">{{ appointment.appointment_date|timeuntil }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                    <p class="text-muted mb-2">No upcoming appointments</p>
+                    <a href="{% url 'client:book_appointment' %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-plus me-1"></i>Book Your First Appointment
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions Card -->
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <a href="{% url 'client:book_appointment' %}" class="btn btn-outline-primary btn-sm w-100 mb-2">
+                            <i class="fas fa-plus fa-2x mb-2"></i>
+                            <br>
+                            <small>Book Appointment</small>
+                        </a>
+                    </div>
+                    <div class="col-4">
+                        <a href="{% url 'client:client_qr_code' %}" class="btn btn-outline-info btn-sm w-100 mb-2">
+                            <i class="fas fa-qrcode fa-2x mb-2"></i>
+                            <br>
+                            <small>My QR Code</small>
+                        </a>
+                    </div>
+                    <div class="col-4">
+                        <a href="#" class="btn btn-outline-success btn-sm w-100 mb-2">
+                            <i class="fas fa-list fa-2x mb-2"></i>
+                            <br>
+                            <small>View All</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Sidebar - Packages & Stats -->
+    <div class="col-12 col-lg-4 mb-4">
+        <!-- Active Packages Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-box me-2"></i>Active Packages</h6>
+            </div>
+            <div class="card-body p-0">
+                {% if active_packages %}
+                <div class="list-group list-group-flush">
+                    {% for package in active_packages %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <strong>{{ package.service_package.name }}</strong>
+                            <span class="badge bg-{% if package.tickets_remaining > 2 %}success{% else %}warning{% endif %}">
+                                {{ package.tickets_remaining }} left
+                            </span>
+                        </div>
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar bg-success" 
+                                 style="width: {% widthratio package.tickets_used package.total_tickets 100 %}%">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">
+                                {{ package.tickets_used }}/{{ package.total_tickets }} used
+                            </small>
+                            <small class="text-muted">
+                                Expires: {{ package.end_date|date:"M d" }}
+                            </small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-box-open fa-2x text-muted mb-3"></i>
+                    <p class="text-muted mb-2">No active packages</p>
+                    <a href="{% url 'client:services' %}" class="btn btn-sm btn-outline-primary">
+                        View Packages
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Attendance Card -->
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0"><i class="fas fa-history me-2"></i>Recent Attendance</h6>
+            </div>
+            <div class="card-body p-0">
+                {% if attendance_history %}
+                <div class="list-group list-group-flush">
+                    {% for record in attendance_history %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="d-flex align-items-center mb-1">
+                                    <i class="fas fa-{% if record.session_type == 'gym' %}dumbbell{% elif record.session_type == 'massage' %}spa{% else %}fire{% endif %} text-primary me-2"></i>
+                                    <strong class="text-capitalize">{{ record.session_type }}</strong>
+                                </div>
+                                <small class="text-muted">
+                                    {{ record.check_in_time|date:"M d" }} • {{ record.check_in_time|time:"g:i A" }}
+                                </small>
+                            </div>
+                            <span class="badge bg-success">Completed</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-history fa-2x text-muted mb-3"></i>
+                    <p class="text-muted">No attendance records yet</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Emergency Low Tickets Warning -->
+{% for package in active_packages %}
+    {% if package.tickets_remaining <= 2 and package.tickets_remaining > 0 %}
+    <div class="alert alert-warning alert-dismissible fade show mt-4" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+            <div>
+                <h5 class="alert-heading mb-1">Low Tickets Alert! ⚠️</h5>
+                <p class="mb-0">You have only <strong>{{ package.tickets_remaining }}</strong> ticket(s) remaining in your <strong>{{ package.service_package.name }}</strong> package.</p>
+                <p class="mb-0">Please book a new appointment to renew your package.</p>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="mt-2">
+            <a href="{% url 'client:book_appointment' %}" class="btn btn-warning btn-sm">
+                <i class="fas fa-plus me-1"></i>Book New Appointment
+            </a>
+        </div>
+    </div>
+    {% endif %}
+{% endfor %}
+
+<style>
+.stat-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+
+.stat-icon {
+    opacity: 0.8;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--accent);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid #eee;
+    padding: 1rem;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.card-header {
+    border: none;
+    font-weight: 600;
+}
+
+.progress {
+    border-radius: 10px;
+}
+
+.alert {
+    border: none;
+    border-radius: 12px;
+}
+
+.btn-group .btn {
+    border-radius: 8px;
+}
+
+.text-muted {
+    font-size: 0.85rem;
+}
+
+.badge {
+    font-size: 0.75em;
+    padding: 0.35em 0.65em;
+}
+</style>
+{% endblock %}

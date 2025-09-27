@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+
+{% block title %}My Appointments - New Chogma-SPA{% endblock %}
+{% block page_title %}My Appointments{% endblock %}
+
+{% block content %}
+<div class="welcome-section mb-4">
+    <div class="row align-items-center">
+        <div class="col-12 col-md-8">
+            <h4><i class="fas fa-calendar me-2"></i>Appointment Management</h4>
+            <p class="mb-0">View and manage your appointments</p>
+        </div>
+        <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="btn-group w-100">
+                <button class="btn btn-outline-light btn-sm" onclick="location.reload()">
+                    <i class="fas fa-sync-alt me-1"></i>Refresh
+                </button>
+                <a href="{% url 'client:book_appointment' %}" class="btn btn-accent btn-sm" style="background-color: var(--accent); color: var(--primary-dark);">
+                    <i class="fas fa-plus me-1"></i>Book Appointment
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upcoming Appointments -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h6 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Upcoming Appointments</h6>
+    </div>
+    <div class="card-body p-0">
+        {% if upcoming_appointments %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Service</th>
+                        <th>Date & Time</th>
+                        <th>Tickets</th>  <!-- Changed from Sessions to Tickets -->
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appointment in upcoming_appointments %}
+                    <tr>
+                        <td>
+                            <strong>{{ appointment.service.name }}</strong>
+                            {% if appointment.notes %}
+                            <br><small class="text-muted">{{ appointment.notes|truncatewords:5 }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ appointment.appointment_date|date:"M d, Y" }}<br>
+                            <small>{{ appointment.appointment_time|time:"g:i A" }}</small>
+                        </td>
+                        <td>{{ appointment.tickets_included }} tickets</td>  <!-- Changed from sessions to tickets -->
+                        <td>
+                            <span class="badge 
+                                {% if appointment.status == 'confirmed' %}bg-success
+                                {% elif appointment.status == 'pending' %}bg-warning
+                                {% else %}bg-secondary{% endif %}">
+                                {{ appointment.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if appointment.status == 'pending' or appointment.status == 'confirmed' %}
+                            <button class="btn btn-sm btn-outline-danger cancel-appointment" 
+                                    data-appointment-id="{{ appointment.id }}"
+                                    data-appointment-service="{{ appointment.service.name }}"
+                                    data-appointment-date="{{ appointment.appointment_date|date:'M d, Y' }}"
+                                    data-appointment-time="{{ appointment.appointment_time|time:'g:i A' }}">
+                                <i class="fas fa-times me-1"></i>Cancel
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-calendar-times fa-2x text-muted mb-3"></i>
+            <p class="text-muted">No upcoming appointments</p>
+            <a href="{% url 'client:book_appointment' %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-plus me-1"></i>Book Your First Appointment
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Past Appointments -->
+<div class="card">
+    <div class="card-header bg-secondary text-white">
+        <h6 class="mb-0"><i class="fas fa-history me-2"></i>Appointment History</h6>
+    </div>
+    <div class="card-body p-0">
+        {% if past_appointments %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Service</th>
+                        <th>Date & Time</th>
+                        <th>Tickets</th>  <!-- Changed from Duration to Tickets -->
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appointment in past_appointments %}
+                    <tr>
+                        <td>
+                            <strong>{{ appointment.service.name }}</strong>
+                            {% if appointment.notes %}
+                            <br><small class="text-muted">{{ appointment.notes|truncatewords:5 }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ appointment.appointment_date|date:"M d, Y" }}<br>
+                            <small>{{ appointment.appointment_time|time:"g:i A" }}</small>
+                        </td>
+                        <td>{{ appointment.tickets_included }} tickets</td>  <!-- Changed from duration to tickets -->
+                        <td>
+                            <span class="badge 
+                                {% if appointment.status == 'completed' %}bg-success
+                                {% elif appointment.status == 'cancelled' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {{ appointment.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-history fa-2x text-muted mb-3"></i>
+            <p class="text-muted">No appointment history</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Cancel Confirmation Modal -->
+<div class="modal fade" id="cancelAppointmentModal" tabindex="-1" aria-labelledby="cancelAppointmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="cancelAppointmentModalLabel">Confirm Cancellation</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel your appointment for <strong id="cancelServiceName"></strong> on <strong id="cancelAppointmentDate"></strong> at <strong id="cancelAppointmentTime"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Appointment</button>
+                <button type="button" class="btn btn-danger" id="confirmCancelAppointment">Cancel Appointment</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Appointment cancellation functionality
+    const cancelAppointmentModal = new bootstrap.Modal(document.getElementById('cancelAppointmentModal'));
+    let currentAppointmentId = null;
+
+    document.querySelectorAll('.cancel-appointment').forEach(button => {
+        button.addEventListener('click', function() {
+            currentAppointmentId = this.getAttribute('data-appointment-id');
+            const serviceName = this.getAttribute('data-appointment-service');
+            const appointmentDate = this.getAttribute('data-appointment-date');
+            const appointmentTime = this.getAttribute('data-appointment-time');
+            
+            document.getElementById('cancelServiceName').textContent = serviceName;
+            document.getElementById('cancelAppointmentDate').textContent = appointmentDate;
+            document.getElementById('cancelAppointmentTime').textContent = appointmentTime;
+            
+            cancelAppointmentModal.show();
+        });
+    });
+
+    document.getElementById('confirmCancelAppointment').addEventListener('click', function() {
+        if (currentAppointmentId) {
+            fetch(`/client/appointments/cancel/${currentAppointmentId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', data.message);
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showAlert('danger', 'Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                showAlert('danger', 'Error: ' + error);
+            })
+            .finally(() => {
+                cancelAppointmentModal.hide();
+                currentAppointmentId = null;
+            });
+        }
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function showAlert(type, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.querySelector('.welcome-section').after(alertDiv);
+        
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
+    }
+</script>
+{% endblock %}
